@@ -26,6 +26,9 @@ extern struct Command commands[] ;
 extern uint32 NUM_OF_COMMANDS ;
 
 // Declaration of functions that implement command prompt commands.
+
+int SayMyName(int number_of_arguments, char **arguments);
+
 int command_help(int , char **);
 int command_kernel_info(int , char **);
 int command_calc_space(int number_of_arguments, char **arguments);
