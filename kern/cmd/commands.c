@@ -93,13 +93,7 @@ struct Command commands[] =
 		//2022
 		{"autocomplete", "Test commands autcomplte", command_test_autocomplete},
 		{"tstlsts","Test lists manipulation for dynamic blocks management", command_test_lists },
-		{"abdalla","printing abdalla maged mohamed" , SayMyName },
 };
-
-int SayMyName(int number_of_arguments, char **arguments){
-	cprintf("abdalla maged mohamed\n");
-	return 0;
-}
 
 //Number of commands = size of the array / size of command structure
 uint32 NUM_OF_COMMANDS  = (sizeof(commands)/sizeof(struct Command));
