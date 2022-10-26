@@ -92,7 +92,7 @@ struct Command commands[] =
 		{"tstsc4","Scenario#4: MLFQ",command_test_sc_MLFQ },
 		//2022
 		{"autocomplete", "Test commands autcomplte", command_test_autocomplete},
-		{"tstlsts","Test lists manipulation for dynamic blocks management", command_test_lists },
+		{"tstlsts","Test lists manipulation for dynamic blocks management", command_test_lists }
 };
 
 //Number of commands = size of the array / size of command structure

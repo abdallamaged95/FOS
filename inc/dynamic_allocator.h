@@ -39,6 +39,18 @@ struct MemBlock *alloc_block_FF(uint32 size);
 struct MemBlock *alloc_block_BF(uint32 size);
 struct MemBlock *alloc_block_NF(uint32 size);
 void insert_sorted_with_merge_freeList(struct MemBlock *blockToInsert) ;
+
+//CUSTOM FUNCTIONS//
+void insert_no_merge_tail(struct MemBlock *blockToInsert);
+void insert_no_merge_head(struct MemBlock *blockToInsert);
+void insert_merge_tail(struct MemBlock *iterator, struct MemBlock *blockToInsert);
+void insert_merge_head(struct MemBlock *iterator, struct MemBlock *blockToInsert);
+void insert_merge_prev_only(struct MemBlock *iterator, struct MemBlock *blockToInsert);
+void insert_merge_next_only(struct MemBlock *iterator, struct MemBlock *blockToInsert);
+void insert_merge_next_and_prev(struct MemBlock *iterator, struct MemBlock *blockToInsert);
+void remove_freememblockslist_block(struct MemBlock *iterator);
+void insert_availablememblockslist_tail();
+int sva_and_size(struct MemBlock *block);
 //==========================================================
 
 //PROJECT MS#2 & MS#3

@@ -19,7 +19,24 @@ FUNCTIONS:	readline, cprintf, execute_command, run_command_prompt, command_kerne
 #include "commands.h"
 
 //TODO: [PROJECT MS1] [COMMAND PROMPT] auto-complete
+int auto_complete(char *string) {
+	int string_length = strlen(string);
 
+	int found_match = 0;
+	for(int i = 0; i < NUM_OF_COMMANDS; i++) {
+		int return_value;
+		return_value = strncmp(string, commands[i].name, string_length);
+
+		if(return_value == 0) {
+			cprintf("'%s'\n", commands[i].name);
+			found_match = 1;
+		}
+	}
+	if(found_match)
+		return 1;
+	else
+		return 0;
+}
 //invoke the command prompt
 void run_command_prompt()
 {
@@ -76,8 +93,12 @@ int execute_command(char *command_string)
 	}
 	else
 	{
-		//if not found, then it's unknown command
-		cprintf("Unknown command '%s'\n", arguments[0]);
-		return 0;
+		if(auto_complete(command_string) == 1)
+			return 0;
+		else {
+			//if not found, then it's unknown command
+			cprintf("Unknown command '%s'\n", arguments[0]);
+			return 0;
+		}
 	}
 }
