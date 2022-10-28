@@ -228,7 +228,7 @@ struct MemBlock *alloc_block_NF(uint32 size)
 {
 	//TODO: [PROJECT MS1 - BONUS] [DYNAMIC ALLOCATOR] alloc_block_NF
 	// Write your code here, remove the panic and write your code
-	panic("alloc_block_NF() is not implemented yet...!!");
+	  panic("alloc_block_NF() is not implemented yet...!!");
 
 }
 
@@ -237,67 +237,38 @@ struct MemBlock *alloc_block_NF(uint32 size)
 //==================================================================================//
 //============================ CUSTOM FUNCTIONS ==================================//
 //==================================================================================//
-void insert_no_merge_tail(struct MemBlock *blockToInsert) {
-	LIST_INSERT_TAIL(&(FreeMemBlocksList), blockToInsert);
+uint32 sva_and_size(struct MemBlock *iterator) {
+	return (iterator->sva + iterator->size);
 }
 
-void insert_no_merge_head(struct MemBlock *blockToInsert) {
-	LIST_INSERT_HEAD(&(FreeMemBlocksList), blockToInsert);
-}
-
-void insert_merge_tail(struct MemBlock *iterator, struct MemBlock *blockToInsert) {
-	iterator->size = iterator->size + blockToInsert->size;
-	insert_availablememblockslist_tail();
-}
-
-void insert_merge_head(struct MemBlock *iterator, struct MemBlock *blockToInsert) {
-	blockToInsert->size = blockToInsert->size + iterator->size;
-	LIST_INSERT_HEAD(&(FreeMemBlocksList), blockToInsert);
-	insert_availablememblockslist_tail();
-}
-
-void insert_merge_prev_only(struct MemBlock *iterator, struct MemBlock *blockToInsert) {
-	iterator->size = iterator->size + blockToInsert->size;
-	insert_availablememblockslist_tail();
-}
-
-void insert_merge_next_only(struct MemBlock *iterator, struct MemBlock *blockToInsert) {
-	blockToInsert->size = blockToInsert->size + iterator->size;
-	LIST_INSERT_AFTER(&(FreeMemBlocksList), iterator, blockToInsert);
-	insert_availablememblockslist_tail();
-}
-
-void insert_merge_next_and_prev(struct MemBlock *iterator, struct MemBlock *blockToInsert) {
-	insert_merge_next_only(iterator, blockToInsert);
-	remove_freememblockslist_block(LIST_NEXT(blockToInsert));
-	insert_merge_prev_only(iterator, blockToInsert);
-	remove_freememblockslist_block(blockToInsert);
-
-}
-
-void remove_freememblockslist_block(struct MemBlock *iterator) {
+void remove_from_free(struct MemBlock *iterator) {
 	LIST_REMOVE(&(FreeMemBlocksList), iterator);
 }
 
-void insert_availablememblockslist_tail() {
-	struct MemBlock returned;
-	struct MemBlock *returnedPointer;
-	returned.size = 0;
-	returned.sva = 0;
-	returnedPointer = &(returned);
-	LIST_INSERT_TAIL(&(AvailableMemBlocksList), returnedPointer);
+void send_to_available(struct MemBlock *iterator) {
+	iterator->sva = 0;
+	iterator->size = 0;
+	LIST_INSERT_TAIL(&(AvailableMemBlocksList), iterator);
 }
 
-int sva_and_size(struct MemBlock *block) {
-	return (block->sva + block->size);
+void merge_next(struct MemBlock *block, struct MemBlock *iterator) {
+	block->size = block->size + iterator->size;
+	remove_from_free(iterator);
+	send_to_available(iterator);
+}
+
+void merge_prev(struct MemBlock *block, struct MemBlock *iterator) {
+	block->size = block->size + iterator->size;
+	remove_from_free(iterator);
+	send_to_available(iterator);
 }
 //===================================================
 // [8] INSERT BLOCK (SORTED WITH MERGE) IN FREE LIST:
 //===================================================
 void insert_sorted_with_merge_freeList(struct MemBlock *blockToInsert)
 {
-	//cprintf("BEFORE INSERT with MERGE: insert [%x, %x)\n=====================\n", blockToInsert->sva, blockToInsert->sva + blockToInsert->size);
-	//print_mem_block_lists() ;
+//	cprintf("BEFORE INSERT with MERGE: insert [%x, %x)\n=====================\n", blockToInsert->sva, blockToInsert->sva + blockToInsert->size);
+//	print_mem_block_lists() ;
 
 	//TODO: [PROJECT MS1] [DYNAMIC ALLOCATOR] insert_sorted_with_merge_freeList
 	// Write your code here, remove the panic and write your code
@@ -306,86 +277,46 @@ void insert_sorted_with_merge_freeList(struct MemBlock *blockToInsert)
 	int listSize;
 	listSize = LIST_SIZE(&(FreeMemBlocksList));
 
-	// Insert Block at the head when FreeMemBlocksList is empty
 	if(listSize == 0) {
-		insert_no_merge_head(blockToInsert);
+		LIST_INSERT_HEAD(&(FreeMemBlocksList), blockToInsert);
 	}
 	else {
 		struct MemBlock *iterator;
 		LIST_FOREACH(iterator, &(FreeMemBlocksList)) {
-//			cprintf("AvailableMem Size: %d\nFreeMem Size: %d\n\n", LIST_SIZE(&(AvailableMemBlocksList)), LIST_SIZE(&(FreeMemBlocksList)));
-			if(iterator->sva < blockToInsert->sva) {
+			if(blockToInsert->sva > iterator->sva) {
 				if(LIST_NEXT(iterator) == NULL) {
-					if(sva_and_size(iterator) != blockToInsert->sva) {
-						insert_no_merge_tail(blockToInsert);
-					}
-					else if(sva_and_size(iterator) == blockToInsert->sva){
-						insert_merge_tail(iterator, blockToInsert);
-					}
+					LIST_INSERT_TAIL(&(FreeMemBlocksList), blockToInsert);
 				}
-				else if(LIST_NEXT(iterator) != NULL) {
+				else {
 					if(LIST_NEXT(iterator)->sva > blockToInsert->sva) {
-						if(sva_and_size(iterator) != blockToInsert->sva && sva_and_size(blockToInsert) != LIST_NEXT(iterator)->sva) {
-							LIST_INSERT_AFTER(&(FreeMemBlocksList), iterator, blockToInsert);
-						}
-						else if(sva_and_size(iterator) == blockToInsert->sva && sva_and_size(blockToInsert) != LIST_NEXT(iterator)->sva) {
-							insert_merge_prev_only(iterator, blockToInsert);
-							remove_freememblockslist_block(blockToInsert);
-						}
-						else if(sva_and_size(iterator) != blockToInsert->sva && sva_and_size(blockToInsert) == LIST_NEXT(iterator)->sva) {
-							insert_merge_next_only(LIST_NEXT(iterator), blockToInsert);
-
-						}
-						else if(sva_and_size(iterator) == blockToInsert->sva && sva_and_size(blockToInsert) == LIST_NEXT(iterator)->sva) {
-							insert_merge_next_only(LIST_NEXT(iterator), blockToInsert);
-							remove_freememblockslist_block(LIST_NEXT(blockToInsert));
-							insert_merge_prev_only(iterator, blockToInsert);
-							remove_freememblockslist_block(LIST_NEXT(iterator));
-						}
-					}
-					else if(LIST_NEXT(iterator)->sva < blockToInsert->sva) {
-						continue;
+						LIST_INSERT_AFTER(&(FreeMemBlocksList), iterator, blockToInsert);
 					}
 				}
 			}
-			else if(iterator->sva > blockToInsert->sva) {
+			else {
 				if(LIST_PREV(iterator) == NULL) {
-					if(sva_and_size(blockToInsert) != iterator->sva) {
-						insert_no_merge_head(blockToInsert);
-					}
-					else if(sva_and_size(blockToInsert) == iterator->sva) {
-						insert_merge_head(iterator, blockToInsert);
-					}
+					LIST_INSERT_HEAD(&(FreeMemBlocksList), blockToInsert);
 				}
-				else if(LIST_PREV(iterator) != NULL) {
+				else {
 					if(LIST_PREV(iterator)->sva < blockToInsert->sva) {
-						if(sva_and_size(LIST_PREV(iterator)) != blockToInsert->sva && sva_and_size(blockToInsert) != iterator->sva) {
-							LIST_INSERT_AFTER(&(FreeMemBlocksList), LIST_PREV(iterator), blockToInsert);
-						}
-						else if(sva_and_size(LIST_PREV(iterator)) == blockToInsert->sva && sva_and_size(blockToInsert) != iterator->sva) {
-							insert_merge_prev_only(LIST_PREV(iterator), blockToInsert);
-						}
-						else if(sva_and_size(LIST_PREV(iterator)) != blockToInsert->sva && sva_and_size(blockToInsert) == iterator->sva) {
-							insert_merge_next_only(iterator, blockToInsert);
-						}
-						else if(sva_and_size(LIST_PREV(iterator)) == blockToInsert->sva && sva_and_size(blockToInsert) == iterator->sva) {
-							insert_merge_next_only(LIST_NEXT(iterator), blockToInsert);
-														remove_freememblockslist_block(LIST_NEXT(blockToInsert));
-														insert_merge_prev_only(iterator, blockToInsert);
-														remove_freememblockslist_block(LIST_NEXT(iterator));
-						}
-					}
-					else if(LIST_PREV(iterator)->sva > blockToInsert->sva) {
-						continue;
+						LIST_INSERT_BEFORE(&(FreeMemBlocksList), iterator, blockToInsert);
 					}
 				}
 			}
+		}
+
+		if(LIST_NEXT(blockToInsert) != NULL) {
+			if(sva_and_size(blockToInsert) == LIST_NEXT(blockToInsert)->sva) {
+				merge_next(blockToInsert, LIST_NEXT(blockToInsert));
+			}
+		}
+
+		if(LIST_PREV(blockToInsert) != NULL) {
+			if(sva_and_size(LIST_PREV(blockToInsert)) == blockToInsert->sva) {
+				merge_prev(LIST_PREV(blockToInsert), blockToInsert);
+			}
+		}
 	}
-
-	}
-	//cprintf("\nAFTER INSERT with MERGE:\n=====================\n");
-	//print_mem_block_lists();
-
-
-
+//	cprintf("\nAFTER INSERT with MERGE:\n=====================\n");
+//	print_mem_block_lists();
 }

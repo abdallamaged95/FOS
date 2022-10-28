@@ -41,16 +41,11 @@ struct MemBlock *alloc_block_NF(uint32 size);
 void insert_sorted_with_merge_freeList(struct MemBlock *blockToInsert) ;
 
 //CUSTOM FUNCTIONS//
-void insert_no_merge_tail(struct MemBlock *blockToInsert);
-void insert_no_merge_head(struct MemBlock *blockToInsert);
-void insert_merge_tail(struct MemBlock *iterator, struct MemBlock *blockToInsert);
-void insert_merge_head(struct MemBlock *iterator, struct MemBlock *blockToInsert);
-void insert_merge_prev_only(struct MemBlock *iterator, struct MemBlock *blockToInsert);
-void insert_merge_next_only(struct MemBlock *iterator, struct MemBlock *blockToInsert);
-void insert_merge_next_and_prev(struct MemBlock *iterator, struct MemBlock *blockToInsert);
-void remove_freememblockslist_block(struct MemBlock *iterator);
-void insert_availablememblockslist_tail();
-int sva_and_size(struct MemBlock *block);
+uint32 sva_and_size(struct MemBlock *iterator);
+void remove_from_free(struct MemBlock *iterator);
+void send_to_available(struct MemBlock *iterator);
+void merge_next(struct MemBlock *block, struct MemBlock *iterator);
+void merge_prev(struct MemBlock *block, struct MemBlock *iterator);
 //==========================================================
 
 //PROJECT MS#2 & MS#3

@@ -483,7 +483,6 @@ void test_alloc_block_NF()
 
 	//====================================================================//
 	/*NF ALLOC Scenario 3: Try to allocate a block with a size equal to the size of the one existing free blocks (The first one fit after the last allocated VA)*/
-	// Now, lastAllocVA shall EQUAL to 0x7000
 	blockToAlloc = alloc_block_NF(2*Mega);
 
 	//Check returned block content
@@ -505,11 +504,10 @@ void test_alloc_block_NF()
 
 	//====================================================================//
 	/*NF ALLOC Scenario 4: Try to allocate a block with a size smaller than the size of any existing free block (The first one fit after the last allocated VA)*/
-	// Now, lastAllocVA shall EQUAL to 0x7000
-	blockToAlloc = alloc_block_NF(512*kilo);
+	blockToAlloc = alloc_block_NF(1*kilo);
 
 	//Check returned block content
-	if(blockToAlloc == NULL || blockToAlloc->size != 512*kilo || blockToAlloc->sva != 0x21B400)
+	if(blockToAlloc == NULL || blockToAlloc->size != 1*kilo || blockToAlloc->sva != 0x21B400)
 		panic("alloc_block_NF: WRONG NF ALLOC - alloc_block_NF find a wrong block.");
 
 	//Check size of AvailableMemBlocksList, FreeMemBlocksList & AllocMemBlocksList
@@ -519,19 +517,18 @@ void test_alloc_block_NF()
 	//Check FreeMemBlocksList content
 	size = 0;
 	actualSize = numOfFreeBlocks_NF-2;
-	BlocksSVAs[6] = 0x21B400 + 512*kilo;
-	BlocksSizes[6] = 512*kilo;
+	BlocksSVAs[6] = 0x21B400 + 1*kilo;
+	BlocksSizes[6] = 1*Mega - 1*kilo;
 	chk = check_list_data(&FreeMemBlocksList, BlocksSVAs, BlocksSizes, &size, actualSize);
 	if(chk != 1) panic("alloc_block_NF: WRONG NF ALLOC .. FreeMemBlocksList content is not correct.");
 	if(size != actualSize) panic("alloc_block_NF: WRONG NF ALLOC .. FreeMemBlocksList size is not correct.");
 
 	//====================================================================//
 	/*NF ALLOC Scenario 5: Try to allocate a block with a size smaller than the size of any existing free block (One from the updated blocks before in the free list)*/
-	// Now, lastAllocVA shall EQUAL to 0x7000
-	blockToAlloc = alloc_block_NF(511*kilo);
+	blockToAlloc = alloc_block_NF(1*Mega-2*kilo);
 
 	//Check returned block content
-	if(blockToAlloc == NULL || blockToAlloc->size != 511*kilo || blockToAlloc->sva != (0x21B400 + 512*kilo))
+	if(blockToAlloc == NULL || blockToAlloc->size != 1*Mega-2*kilo || blockToAlloc->sva != (0x21B400 + 1*kilo))
 		panic("alloc_block_NF: WRONG NF ALLOC - alloc_block_NF find a wrong block.");
 
 	//Check size of AvailableMemBlocksList, FreeMemBlocksList & AllocMemBlocksList
@@ -541,7 +538,7 @@ void test_alloc_block_NF()
 	//Check FreeMemBlocksList content
 	size = 0;
 	actualSize = numOfFreeBlocks_NF-2;
-	BlocksSVAs[6] = 0x21B400 + 512*kilo + (511*kilo);
+	BlocksSVAs[6] = 0x21B400 + 1*kilo + (1*Mega-2*kilo);
 	BlocksSizes[6] = 1*kilo;
 	chk = check_list_data(&FreeMemBlocksList, BlocksSVAs, BlocksSizes, &size, actualSize);
 	if(chk != 1) panic("alloc_block_NF: WRONG NF ALLOC .. FreeMemBlocksList content is not correct.");
@@ -549,44 +546,63 @@ void test_alloc_block_NF()
 
 	//====================================================================//
 	/*NF ALLOC Scenario 6: Try to allocate a block with a size smaller than ALL the NEXT existing blocks .. Shall start search from the start of the list*/
-	// Now, lastAllocVA shall EQUAL to 0x7000
-	blockToAlloc = alloc_block_NF(3*kilo);
+	blockToAlloc = alloc_block_NF(2*kilo);
 
 	//Check returned block content
-	if(blockToAlloc == NULL || blockToAlloc->size != 3*kilo || blockToAlloc->sva != 0x0)
+	if(blockToAlloc == NULL || blockToAlloc->size != 2*kilo || blockToAlloc->sva != 0x0)
 		panic("alloc_block_NF: WRONG NF ALLOC - alloc_block_NF find a wrong block.");
 
 	//Check size of AvailableMemBlocksList, FreeMemBlocksList & AllocMemBlocksList
-	if (LIST_SIZE(&(AvailableMemBlocksList)) != numOfBlocks-2 || LIST_SIZE(&(FreeMemBlocksList)) != numOfFreeBlocks_NF-3 || LIST_SIZE(&(AllocMemBlocksList)) != 0)
+	if (LIST_SIZE(&(AvailableMemBlocksList)) != numOfBlocks-3 || LIST_SIZE(&(FreeMemBlocksList)) != numOfFreeBlocks_NF-2 || LIST_SIZE(&(AllocMemBlocksList)) != 0)
 		panic("alloc_block_NF: Wrong sizes for AvailableMemBlocksList, FreeMemBlocksList and AllocMemBlocksList.");
 
 	//Check FreeMemBlocksList content
 	size = 0;
-	actualSize = numOfFreeBlocks_NF-3;
-	BlocksSVAs[0] = 0;
-	BlocksSizes[0] = 0;
+	actualSize = numOfFreeBlocks_NF-2;
+	BlocksSVAs[0] = 0 + 2*kilo;
+	BlocksSizes[0] = 1*kilo;
 	chk = check_list_data(&FreeMemBlocksList, BlocksSVAs, BlocksSizes, &size, actualSize);
 	if(chk != 1) panic("alloc_block_NF: WRONG NF ALLOC .. FreeMemBlocksList content is not correct.");
 	if(size != actualSize) panic("alloc_block_NF: WRONG NF ALLOC .. FreeMemBlocksList size is not correct.");
 
 	//====================================================================//
 	/*NF ALLOC Scenario 7: Try to allocate a block with a size smaller than the existing blocks .. To try to update head not to remove it*/
-	// Now, lastAllocVA shall EQUAL to 0x7000
-	blockToAlloc = alloc_block_NF(1*kilo);
+	blockToAlloc = alloc_block_NF(7*kilo);
 
 	//Check returned block content
-	if(blockToAlloc == NULL || blockToAlloc->size != 1*kilo || blockToAlloc->sva != 0x2000)
+	if(blockToAlloc == NULL || blockToAlloc->size != 7*kilo || blockToAlloc->sva != 0x2000)
 		panic("alloc_block_NF: WRONG NF ALLOC - alloc_block_NF find a wrong block.");
 
 	//Check size of AvailableMemBlocksList, FreeMemBlocksList & AllocMemBlocksList
-	if (LIST_SIZE(&(AvailableMemBlocksList)) != numOfBlocks-3 || LIST_SIZE(&(FreeMemBlocksList)) != numOfFreeBlocks_NF-3 || LIST_SIZE(&(AllocMemBlocksList)) != 0)
+	if (LIST_SIZE(&(AvailableMemBlocksList)) != numOfBlocks-4 || LIST_SIZE(&(FreeMemBlocksList)) != numOfFreeBlocks_NF-2 || LIST_SIZE(&(AllocMemBlocksList)) != 0)
+		panic("alloc_block_NF: Wrong sizes for AvailableMemBlocksList, FreeMemBlocksList and AllocMemBlocksList.");
+
+	//Check FreeMemBlocksList content
+	size = 0;
+	actualSize = numOfFreeBlocks_NF-2;
+	BlocksSVAs[1] = 0x2000 + 7*kilo;
+	BlocksSizes[1] = 1*kilo;
+	chk = check_list_data(&FreeMemBlocksList, BlocksSVAs, BlocksSizes, &size, actualSize);
+	if(chk != 1) panic("alloc_block_NF: WRONG NF ALLOC .. FreeMemBlocksList content is not correct.");
+	if(size != actualSize) panic("alloc_block_NF: WRONG NF ALLOC .. FreeMemBlocksList size is not correct.");
+
+	//====================================================================//
+	/*NF ALLOC Scenario 8: Try to allocate a block with a size equal to one of the updated existing blocks .. */
+	blockToAlloc = alloc_block_NF(1*kilo);
+
+	//Check returned block content
+	if(blockToAlloc == NULL || blockToAlloc->size != 1*kilo || blockToAlloc->sva != 0x2000 + 7*kilo)
+		panic("alloc_block_NF: WRONG NF ALLOC - alloc_block_NF find a wrong block.");
+
+	//Check size of AvailableMemBlocksList, FreeMemBlocksList & AllocMemBlocksList
+	if (LIST_SIZE(&(AvailableMemBlocksList)) != numOfBlocks-4 || LIST_SIZE(&(FreeMemBlocksList)) != numOfFreeBlocks_NF-3 || LIST_SIZE(&(AllocMemBlocksList)) != 0)
 		panic("alloc_block_NF: Wrong sizes for AvailableMemBlocksList, FreeMemBlocksList and AllocMemBlocksList.");
 
 	//Check FreeMemBlocksList content
 	size = 0;
 	actualSize = numOfFreeBlocks_NF-3;
-	BlocksSVAs[1] = 0x2000 + 1*kilo;
-	BlocksSizes[1] = 7*kilo;
+	BlocksSVAs[1] = 0;
+	BlocksSizes[1] = 0;
 	chk = check_list_data(&FreeMemBlocksList, BlocksSVAs, BlocksSizes, &size, actualSize);
 	if(chk != 1) panic("alloc_block_NF: WRONG NF ALLOC .. FreeMemBlocksList content is not correct.");
 	if(size != actualSize) panic("alloc_block_NF: WRONG NF ALLOC .. FreeMemBlocksList size is not correct.");
