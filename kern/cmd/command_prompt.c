@@ -14,21 +14,31 @@ FUNCTIONS:	readline, cprintf, execute_command, run_command_prompt, command_kerne
 #include <kern/cmd/command_prompt.h>
 
 #include <kern/proc/user_environment.h>
+
 #include <kern/trap/kdebug.h>
+
 #include <kern/cons/console.h>
+
 #include "commands.h"
 
 //TODO: [PROJECT MS1] [COMMAND PROMPT] auto-complete
+
 int auto_complete(char *string) {
+
 	int string_length = strlen(string);
 
 	int found_match = 0;
-	for(int i = 0; i < NUM_OF_COMMANDS; i++) {
+
+	for(int i = 0; i < NUM_OF_COMMANDS; i++)
+	{
 		int return_value;
+
 		return_value = strncmp(string, commands[i].name, string_length);
 
-		if(return_value == 0) {
+		if(return_value == 0)
+		{
 			cprintf("'%s'\n", commands[i].name);
+
 			found_match = 1;
 		}
 	}
@@ -37,7 +47,9 @@ int auto_complete(char *string) {
 	else
 		return 0;
 }
+
 //invoke the command prompt
+
 void run_command_prompt()
 {
 	char command_line[1024];
@@ -45,9 +57,11 @@ void run_command_prompt()
 	while (1==1)
 	{
 		//get command line
+
 		readline("FOS> ", command_line);
 
 		//parse and execute the command
+
 		if (command_line != NULL)
 			if (execute_command(command_line) < 0)
 				break;
@@ -57,30 +71,40 @@ void run_command_prompt()
 /***** Kernel command prompt command interpreter *****/
 
 //define the white-space symbols
+
 #define WHITESPACE "\t\r\n "
 
 //Function to parse any command and execute it
+
 //(simply by calling its corresponding function)
+
 int execute_command(char *command_string)
 {
 	// Split the command string into whitespace-separated arguments
+
 	int number_of_arguments;
+
 	//allocate array of char * of size MAX_ARGUMENTS = 16 found in string.h
+
 	char *arguments[MAX_ARGUMENTS];
 
-
 	strsplit(command_string, WHITESPACE, arguments, &number_of_arguments) ;
+
 	if (number_of_arguments == 0)
 		return 0;
 
 	// Lookup in the commands array and execute the command
+
 	int command_found = 0;
+
 	int i ;
+
 	for (i = 0; i < NUM_OF_COMMANDS; i++)
 	{
 		if (strcmp(arguments[0], commands[i].name) == 0)
 		{
 			command_found = 1;
+
 			break;
 		}
 	}
@@ -88,7 +112,9 @@ int execute_command(char *command_string)
 	if(command_found)
 	{
 		int return_value;
+
 		return_value = commands[i].function_to_execute(number_of_arguments, arguments);
+
 		return return_value;
 	}
 	else
@@ -97,7 +123,9 @@ int execute_command(char *command_string)
 			return 0;
 		else {
 			//if not found, then it's unknown command
+
 			cprintf("Unknown command '%s'\n", arguments[0]);
+
 			return 0;
 		}
 	}
