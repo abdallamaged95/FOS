@@ -10,22 +10,49 @@
 inline void pt_set_page_permissions(uint32* page_directory, uint32 virtual_address, uint32 permissions_to_set, uint32 permissions_to_clear)
 {
 	//TODO: [PROJECT MS2] [PAGING HELPERS] pt_set_page_permissions
-	// Write your code here, remove the panic and write your code
-	panic("pt_set_page_permissions() is not implemented yet...!!");
+//	cprintf("set : %d\n",permissions_to_set);
+//	cprintf("clear : %d\n",permissions_to_clear);
+	uint32 *page_table_entry;
+	uint32 exist = get_page_table(page_directory , virtual_address , &page_table_entry);
+	if(!exist){
+		page_table_entry[PTX(virtual_address)] =
+				page_table_entry[PTX(virtual_address)] | permissions_to_set;
+		page_table_entry[PTX(virtual_address)] =
+				page_table_entry[PTX(virtual_address)] & (~permissions_to_clear);
+		tlb_invalidate((void*)NULL , (void *)virtual_address);
+	}
+	else{
+		panic("\nDEVELOPER PANIC : this address is invalid");
+	}
+
 }
 
 inline int pt_get_page_permissions(uint32* page_directory, uint32 virtual_address )
 {
 	//TODO: [PROJECT MS2] [PAGING HELPERS] pt_get_page_permissions
-	// Write your code here, remove the panic and write your code
-	panic("pt_get_page_permissions() is not implemented yet...!!");
+	uint32 *page_table_entry;
+		uint32 exist = get_page_table(page_directory , virtual_address , &page_table_entry);
+		if(!exist){
+			uint32 perms = page_table_entry[PTX(virtual_address)] & 0xFFF;
+			return perms;
+		}
+		else
+			return -1;
 }
 
 inline void pt_clear_page_table_entry(uint32* page_directory, uint32 virtual_address)
 {
 	//TODO: [PROJECT MS2] [PAGING HELPERS] pt_clear_page_table_entry
-	// Write your code here, remove the panic and write your code
-	panic("pt_clear_page_table_entry() is not implemented yet...!!");
+
+	uint32 *page_table_entry;
+	uint32 exist = get_page_table(page_directory , virtual_address , &page_table_entry);
+	if(!exist){
+		page_table_entry[PTX(virtual_address)] = 0;
+		tlb_invalidate((void*)NULL , (void *)virtual_address);
+	}
+	else{
+		panic("\nDEVELOPER PANIC : this address is invalid");
+	}
 }
 
 /***********************************************************************************************/
@@ -34,8 +61,15 @@ inline void pt_clear_page_table_entry(uint32* page_directory, uint32 virtual_add
 inline int virtual_to_physical(uint32* page_directory, uint32 virtual_address)
 {
 	//TODO: [PROJECT MS2] [PAGING HELPERS] virtual_to_physical
-	// Write your code here, remove the panic and write your code
-	panic("virtual_to_physical() is not implemented yet...!!");
+
+	uint32 *page_table_entry;
+	uint32 exist = get_page_table(page_directory , virtual_address , &page_table_entry);
+	if(!exist){
+		uint32 physical_address = page_table_entry[PTX(virtual_address)] & 0xfffff000;
+		return physical_address;
+	}
+	else
+		return -1;
 }
 
 /***********************************************************************************************/
