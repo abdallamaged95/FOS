@@ -145,7 +145,39 @@ void calculate_allocated_space(uint32* page_directory, uint32 sva, uint32 eva, u
 {
 	//TODO: [PROJECT MS2 - BONUS] [CHUNK OPERATIONS] calculate_allocated_space
 	// Write your code here, remove the panic and write your code
-	panic("calculate_allocated_space() is not implemented yet...!!");
+	//panic("calculate_allocated_space() is not implemented yet...!!");
+
+	uint32 number_of_pages = 0, number_of_tables = 0;
+			uint32 *page_table1 = NULL;
+			int sign = 0;
+			uint32 initial = ROUNDDOWN(sva, PAGE_SIZE);
+			//use while loop from start virtual  to end virtual
+			while(initial <ROUNDUP(eva, PAGE_SIZE)){
+
+				uint32 *page_table2;
+				if(get_page_table(page_directory, initial, &page_table2) == TABLE_IN_MEMORY){
+					sign = 1;
+					if((page_table2[PTX(initial)] & PERM_PRESENT) != 0){
+						number_of_pages += 1;
+
+						if(page_table1 == NULL){
+							page_table1 = page_table2;
+							number_of_tables += 1;
+						}
+						else{
+							if(!(page_table2 == page_table1))
+								number_of_tables += 1;
+						}
+					}
+				}
+				initial += PAGE_SIZE;
+			}
+			if( sign==1&&number_of_tables == 0)
+				number_of_tables += 1;
+	         //return number of pages
+			*num_pages = number_of_pages;
+			//return number of tables
+			*num_tables = number_of_tables;
 }
 
 /*BONUS*/
