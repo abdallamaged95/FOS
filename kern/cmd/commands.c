@@ -261,20 +261,28 @@ int command_share_range(int number_of_arguments, char **arguments)
 	//Comment the following line
 	//panic("Function is not implemented yet!");
 	uint32 va1 = strtol(arguments[1] ,NULL ,16);
+	va1 = ROUNDDOWN(va1 ,PAGE_SIZE);
 	int size = strtol(arguments[3] ,NULL ,10);
-	int num_of_tables = ROUNDDOWN((size/PAGE_SIZE),1);
-	cprintf("num of tables : %d\n",num_of_tables);
+	int num_of_pages = ROUNDUP(size,4) / 4;
+	cprintf("num of pages : %d\n",num_of_pages);
 	uint32 *page_table1 = NULL;
 	bool exist1 = get_page_table(ptr_page_directory ,va1 ,&page_table1);
 	if (!exist1)
 	{
 		uint32 va2 = strtol(arguments[2] ,NULL ,16);
+		va2 = ROUNDDOWN(va2 ,PAGE_SIZE);
 		uint32 *page_table2 = NULL;
-		bool exist2 = get_page_table(ptr_page_directory ,va2 ,&page_table2);
-		if(exist2)
-			page_table2 = create_page_table(ptr_page_directory ,va2);
-		for (int i=0 ; i < 256000 ; i++)
+		for (int i=0 ; i < num_of_pages ; i++)
 		{
+			bool exist2 = get_page_table(ptr_page_directory ,va2 ,&page_table2);
+			if(exist2){
+				cprintf("creating va2\n");
+				page_table2 = create_page_table(ptr_page_directory ,va2);
+				cprintf("done creating va2\n");
+			}
+			page_table1[PTX(va1)] = page_table2[PTX(va2)];
+			va1 += 4096;
+			va2 += 4096;
 
 		}
 	}

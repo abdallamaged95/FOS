@@ -50,7 +50,51 @@ int share_chunk(uint32* page_directory, uint32 source_va,uint32 dest_va, uint32 
 {
 	//TODO: [PROJECT MS2] [CHUNK OPERATIONS] share_chunk
 	// Write your code here, remove the panic and write your code
-	panic("share_chunk() is not implemented yet...!!");
+	//panic("share_chunk() is not implemented yet...!!");
+
+	source_va = ROUNDDOWN(source_va ,PAGE_SIZE);
+	dest_va = ROUNDDOWN(dest_va ,PAGE_SIZE);
+	size = ROUNDUP(source_va + size ,PAGE_SIZE);
+	if(perms == PERM_USER)
+		size += PAGE_SIZE;
+	while(source_va != size)
+	{
+		uint32 *dest_page_table = NULL ,*source_page_table = NULL;
+		struct FrameInfo *dest_frame = NULL ,*source_frame = NULL;
+
+		source_frame = get_frame_info(page_directory ,source_va ,&source_page_table);
+		if (source_page_table != NULL)
+		{
+			dest_frame = get_frame_info(page_directory ,dest_va ,&dest_page_table);
+			if (dest_frame != NULL){
+				cprintf("Destination Page is already mapped\n");
+				return -1;
+			}
+			if (dest_page_table == NULL){
+				create_page_table(page_directory ,dest_va);
+				get_page_table(page_directory ,dest_va ,&dest_page_table);
+				pt_clear_page_table_entry(page_directory ,dest_va);
+			}
+
+			map_frame(page_directory ,source_frame ,dest_va ,perms);
+			uint32 pa1 = source_page_table[PTX(source_va)];
+			uint32 pa2 = dest_page_table[PTX(dest_va)] ;
+			if (perms == PERM_USER){
+				cprintf("source : %x ,%x ,dest : %x ,%x\n",source_va ,pa1 ,dest_va ,pa2);
+				cprintf("\nnot equal############################################################\n");
+			}
+
+		}
+		else{
+			cprintf("\nSource Doesn't Exist 555555555555555555555555555555555555555555555\n");
+			return -1;
+		}
+
+		dest_va += PAGE_SIZE;
+		source_va += PAGE_SIZE;
+	}
+
+	return 0;
 }
 
 //===============================
