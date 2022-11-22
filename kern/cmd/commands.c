@@ -204,7 +204,27 @@ int command_show_mapping(int number_of_arguments, char **arguments)
 {
 	//TODO: LAB4 Hands-on: fill this function. corresponding command name is "sm"
 	//Comment the following line
-	panic("Function is not implemented yet!");
+//	panic("Function is not implemented yet!");
+
+	uint32 va = strtol(arguments[1], NULL, 16);
+	cprintf("Directory Index : %d\n",PDX(va));
+	cprintf("PA of PageTable : %d\n",ptr_page_directory[PDX(va)]);
+	uint32 *page_table = NULL;
+	int exist = get_page_table(ptr_page_directory, va, &page_table);
+	if (!exist)
+		cprintf("PA of Page : %d\n",(page_table[PTX(va)] >> 12));
+	else
+		cprintf("Virtual Address doesn't exist\n");
+	uint32 present = page_table[PTX(va)] & PERM_PRESENT;
+	if (present)
+		cprintf("Table is Present\n");
+	else
+		cprintf("Table is not Present\n");
+	uint32 used = page_table[PTX(va)] & PERM_USED;
+	if (used)
+		cprintf("Page is Used\n");
+	else
+		cprintf("Page is not Used\n");
 
 	return 0 ;
 }
@@ -213,7 +233,24 @@ int command_set_permission(int number_of_arguments, char **arguments)
 {
 	//TODO: LAB4 Hands-on: fill this function. corresponding command name is "sp"
 	//Comment the following line
-	panic("Function is not implemented yet!");
+	//panic("Function is not implemented yet!");
+
+	uint32 va = strtol(arguments[1], NULL, 16);
+	char perm = arguments[2][0];
+	bool val  = strtol(arguments[3], NULL, 10);
+	uint32 *page_table = NULL;
+	int exist = get_page_table(ptr_page_directory ,va ,&page_table);
+	if (!exist){
+		if (perm == 'w' || perm == 'W'){
+			if (val)
+				page_table[PTX(va)] = page_table[PTX(va)] | PERM_WRITEABLE;
+
+			else
+				page_table[PTX(va)] = page_table[PTX(va)] & ~(PERM_WRITEABLE);
+		}
+	}
+	else
+		cprintf("Virtual Address does not exist\n");
 
 	return 0 ;
 }
@@ -222,7 +259,27 @@ int command_share_range(int number_of_arguments, char **arguments)
 {
 	//TODO: LAB4 Hands-on: fill this function. corresponding command name is "sr"
 	//Comment the following line
-	panic("Function is not implemented yet!");
+	//panic("Function is not implemented yet!");
+	uint32 va1 = strtol(arguments[1] ,NULL ,16);
+	int size = strtol(arguments[3] ,NULL ,10);
+	int num_of_tables = ROUNDDOWN((size/PAGE_SIZE),1);
+	cprintf("num of tables : %d\n",num_of_tables);
+	uint32 *page_table1 = NULL;
+	bool exist1 = get_page_table(ptr_page_directory ,va1 ,&page_table1);
+	if (!exist1)
+	{
+		uint32 va2 = strtol(arguments[2] ,NULL ,16);
+		uint32 *page_table2 = NULL;
+		bool exist2 = get_page_table(ptr_page_directory ,va2 ,&page_table2);
+		if(exist2)
+			page_table2 = create_page_table(ptr_page_directory ,va2);
+		for (int i=0 ; i < 256000 ; i++)
+		{
+
+		}
+	}
+	else
+		cprintf("Virtual Address 1 Doesn't exist");
 
 	return 0;
 }
@@ -235,7 +292,12 @@ int command_nr(int number_of_arguments, char **arguments)
 {
 	//TODO: LAB5 Example: fill this function. corresponding command name is "nr"
 	//Comment the following line
-	panic("Function is not implemented yet!");
+	//panic("Function is not implemented yet!");
+
+	uint32 pa = strtol(arguments[1] ,NULL ,16);
+	struct FrameInfo *frame_info ;
+	frame_info = to_frame_info(pa);
+	cprintf("Num of Refrences : %d\n",frame_info->references);
 
 	return 0;
 }
@@ -248,9 +310,15 @@ int command_ap(int number_of_arguments, char **arguments)
 	//panic("Function is not implemented yet!");
 
 	uint32 va = strtol(arguments[1], NULL, 16);
+	uint32 *page_table = NULL;
 	struct FrameInfo* ptr_frame_info;
-	int ret = allocate_frame(&ptr_frame_info) ;
-	map_frame(ptr_page_directory, ptr_frame_info, va, PERM_USER | PERM_WRITEABLE);
+	ptr_frame_info = get_frame_info(ptr_page_directory ,va ,&page_table);
+	if (ptr_frame_info == NULL)
+	{
+		int ret = allocate_frame(&ptr_frame_info) ;
+		map_frame(ptr_page_directory, ptr_frame_info, va, PERM_USER | PERM_WRITEABLE);
+	}
+
 
 	return 0 ;
 }
@@ -277,7 +345,14 @@ int command_asp(int number_of_arguments, char **arguments)
 {
 	//TODO: LAB5 Hands-on: fill this function. corresponding command name is "asp"
 	//Comment the following line
-	panic("Function is not implemented yet!");
+	//panic("Function is not implemented yet!");
+
+	uint32 va1 = strtol(arguments[1] ,NULL ,16);
+	uint32 va2 = strtol(arguments[2] ,NULL ,16);
+	struct FrameInfo *frame_info = NULL;
+	allocate_frame(&frame_info);
+	map_frame(ptr_page_directory ,frame_info ,va1 ,PERM_USER | PERM_WRITEABLE);
+	map_frame(ptr_page_directory ,frame_info ,va2 ,PERM_USER | PERM_WRITEABLE);
 
 	return 0;
 }
@@ -288,7 +363,24 @@ int command_cfp(int number_of_arguments, char **arguments)
 {
 	//TODO: LAB5 Hands-on: fill this function. corresponding command name is "cfp"
 	//Comment the following line
-	panic("Function is not implemented yet!");
+	//panic("Function is not implemented yet!");
+
+	uint32 va1 = strtol(arguments[1] ,NULL ,16);
+	uint32 va2 = strtol(arguments[2] ,NULL ,16);
+	va1 = ROUNDDOWN(va1 ,PAGE_SIZE);
+	va2 = ROUNDUP(va2 ,PAGE_SIZE);
+	int count = 0;
+	for (uint32 i = va1 ; i < va2 ; i++)
+	{
+		uint32 *page_table = NULL;
+		struct FrameInfo *frame_info = get_frame_info(ptr_page_directory ,i ,&page_table);
+		if (page_table == NULL)
+			create_page_table(ptr_page_directory ,i);
+		if (frame_info == NULL)
+			count++;
+	}
+	count /= 4096;
+	cprintf("Free Pages : %d\n",count);
 
 	return 0;
 }
