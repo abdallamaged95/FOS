@@ -25,7 +25,45 @@ int cut_paste_pages(uint32* page_directory, uint32 source_va, uint32 dest_va, ui
 {
 	//TODO: [PROJECT MS2] [CHUNK OPERATIONS] cut_paste_pages
 	// Write your code here, remove the panic and write your code
-	panic("cut_paste_pages() is not implemented yet...!!");
+	//panic("cut_paste_pages() is not implemented yet...!!");
+
+	source_va = ROUNDDOWN(source_va, PAGE_SIZE);
+	dest_va = ROUNDDOWN(dest_va, PAGE_SIZE);
+
+	uint32 *source_va_page_table = NULL;
+	uint32 *dest_va_page_table = NULL;
+
+	uint32 dest_va_copy = dest_va;
+	for(int i = 0; i < num_of_pages; i++) {
+		struct FrameInfo *frame_checker = get_frame_info(page_directory, dest_va_copy, &dest_va_page_table);
+		if(frame_checker != NULL) {
+			return -1;
+		}
+		dest_va_copy += PAGE_SIZE;
+	}
+
+	dest_va_page_table = NULL;
+	dest_va_copy = dest_va;
+	for(int i = 0; i < num_of_pages; i++) {
+		int page_checker = get_page_table(page_directory, dest_va_copy, &dest_va_page_table);
+		if(page_checker == TABLE_NOT_EXIST) {
+			create_page_table(page_directory, dest_va_copy);
+		}
+		dest_va_copy += PAGE_SIZE;
+	}
+
+	dest_va_page_table = NULL;
+	for(int i = 0; i < num_of_pages; i++) {
+		get_page_table(page_directory, source_va, &source_va_page_table);
+		get_page_table(page_directory, dest_va, &dest_va_page_table);
+		struct FrameInfo *frame_to_be_mapped = get_frame_info(page_directory, source_va, &source_va_page_table);
+		int permissions = source_va_page_table[PTX(source_va)] & 0x00000FFF;
+		map_frame(page_directory, frame_to_be_mapped, dest_va, permissions);
+		unmap_frame(page_directory, source_va);
+		source_va += PAGE_SIZE;
+		dest_va += PAGE_SIZE;
+	}
+	return 0;
 }
 
 //===============================
