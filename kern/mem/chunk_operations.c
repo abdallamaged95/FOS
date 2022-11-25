@@ -195,15 +195,16 @@ int share_chunk(uint32* page_directory, uint32 source_va,uint32 dest_va, uint32 
 int allocate_chunk(uint32* page_directory, uint32 va, uint32 size, uint32 perms)
 {
 	//TODO: [PROJECT MS2] [CHUNK OPERATIONS] allocate_chunk
-	// Write your code here, remove the panic and write your code
-	struct FrameInfo *frames;
+	struct FrameInfo* frames;
+	uint32* table = NULL;
+
+	int flag;
 	size = ROUNDUP(va + size, PAGE_SIZE);
 	va = ROUNDDOWN(va, PAGE_SIZE);
 
 	while(va != size)
 	{
-	uint32* table = NULL;
-	int flag = get_page_table(page_directory, va, &table);
+	 flag = get_page_table(page_directory, va, &table);
 
 	if (flag ==  TABLE_NOT_EXIST)
 		create_page_table(page_directory, va);
@@ -212,9 +213,14 @@ int allocate_chunk(uint32* page_directory, uint32 va, uint32 size, uint32 perms)
 
 	if (frames == NULL)
 	{
-		int flag = allocate_frame(&frames);
+
+		flag = allocate_frame(&frames);
+
 		if (flag != E_NO_MEM)
+		{
 			map_frame(page_directory, frames, va, perms);
+			frames->va = va;
+		}
 
 		else
 			return -1;
@@ -227,6 +233,7 @@ int allocate_chunk(uint32* page_directory, uint32 va, uint32 size, uint32 perms)
 	return 0;
 }
 
+
 /*BONUS*/
 //=====================================
 // 5) CALCULATE ALLOCATED SPACE IN RAM:
@@ -235,39 +242,43 @@ void calculate_allocated_space(uint32* page_directory, uint32 sva, uint32 eva, u
 {
 	//TODO: [PROJECT MS2 - BONUS] [CHUNK OPERATIONS] calculate_allocated_space
 	// Write your code here, remove the panic and write your code
-	//panic("calculate_allocated_space() is not implemented yet...!!");
+//	panic("calculate_allocated_space() is not implemented yet...!!");
 
-	uint32 number_of_pages = 0, number_of_tables = 0;
-			uint32 *page_table1 = NULL;
-			int sign = 0;
-			uint32 initial = ROUNDDOWN(sva, PAGE_SIZE);
-			//use while loop from start virtual  to end virtual
-			while(initial <ROUNDUP(eva, PAGE_SIZE)){
+	sva = ROUNDDOWN(sva, PAGE_SIZE);
+	eva = ROUNDUP(eva, PAGE_SIZE);
 
-				uint32 *page_table2;
-				if(get_page_table(page_directory, initial, &page_table2) == TABLE_IN_MEMORY){
-					sign = 1;
-					if((page_table2[PTX(initial)] & PERM_PRESENT) != 0){
-						number_of_pages += 1;
+	uint32 *sva_page_table_current = NULL;
+	uint32 *sva_page_table_new = NULL;
 
-						if(page_table1 == NULL){
-							page_table1 = page_table2;
-							number_of_tables += 1;
-						}
-						else{
-							if(!(page_table2 == page_table1))
-								number_of_tables += 1;
-						}
-					}
+	uint32 one_table_page_at_least = 0;
+
+	uint32 num_of_tables = 0;
+	uint32 num_of_pages = 0;
+	while(sva != eva) {
+		int table_checker = get_page_table(page_directory, sva, &sva_page_table_new);
+		if(table_checker == TABLE_IN_MEMORY) {
+			one_table_page_at_least = 1;
+			if((sva_page_table_new[PTX(sva)] & PERM_PRESENT) != 0) {
+				num_of_pages++;
+
+				if(sva_page_table_current == NULL) {
+					sva_page_table_current = sva_page_table_new;
+					num_of_tables++;
 				}
-				initial += PAGE_SIZE;
+				else if(sva_page_table_current != NULL && sva_page_table_current != sva_page_table_new) {
+					num_of_tables++;
+				}
 			}
-			if( sign==1&&number_of_tables == 0)
-				number_of_tables += 1;
-	         //return number of pages
-			*num_pages = number_of_pages;
-			//return number of tables
-			*num_tables = number_of_tables;
+		}
+		sva += PAGE_SIZE;
+	}
+
+	if(one_table_page_at_least && num_of_tables == 0) {
+		num_of_tables++;
+	}
+
+	*num_pages = num_of_pages;
+	*num_tables = num_of_tables;
 }
 
 /*BONUS*/

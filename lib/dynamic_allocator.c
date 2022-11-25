@@ -210,36 +210,63 @@ struct MemBlock *alloc_block_FF(uint32 size)
 
 	//	panic("alloc_block_FF() is not implemented yet...!!");
 
-	struct MemBlock * iterator;
+//	struct MemBlock * iterator;
 
-	LIST_FOREACH(iterator, &(FreeMemBlocksList))
-	{
-		if(iterator->size == size)
-		{
-			LIST_REMOVE(&(FreeMemBlocksList), iterator);
+//	LIST_FOREACH(iterator, &(FreeMemBlocksList))
+//	{
+//		if(iterator->size == size)
+//		{
+//			LIST_REMOVE(&(FreeMemBlocksList), iterator);
+//
+//			return iterator;
+//		}
+//		else if(iterator->size > size)
+//		{
+//			struct MemBlock returnedBlock;
+//
+//			returnedBlock.size = size;
+//
+//			returnedBlock.sva = iterator->sva;
+//
+//			iterator->size = iterator->size - size;
+//
+//			iterator->sva = iterator->sva + size;
+//
+//			iterator = &(returnedBlock);
+//
+//			LIST_REMOVE(&(AvailableMemBlocksList), LIST_FIRST(&(AvailableMemBlocksList)));
+//
+//			return iterator;
+//		}
+//	}
+//	return NULL;
 
+
+	struct MemBlock *iterator = NULL;
+
+	struct MemBlock *bestFitIterator = NULL;
+
+	LIST_FOREACH(iterator ,&FreeMemBlocksList){
+		if (iterator->size == size ){
+			LIST_REMOVE(&FreeMemBlocksList,iterator);
 			return iterator;
 		}
-		else if(iterator->size > size)
-		{
-			struct MemBlock returnedBlock;
-
-			returnedBlock.size = size;
-
-			returnedBlock.sva = iterator->sva;
-
-			iterator->size = iterator->size - size;
-
-			iterator->sva = iterator->sva + size;
-
-			iterator = &(returnedBlock);
-
-			LIST_REMOVE(&(AvailableMemBlocksList), LIST_FIRST(&(AvailableMemBlocksList)));
-
-			return iterator;
+		else if (iterator->size > size){
+			bestFitIterator = iterator;
+			break;
 		}
 	}
-	return NULL;
+	if (bestFitIterator != NULL){
+		struct MemBlock *headBlockInAvailable = LIST_FIRST(&AvailableMemBlocksList);
+		LIST_REMOVE(&AvailableMemBlocksList ,headBlockInAvailable);
+		headBlockInAvailable->size = size;
+		headBlockInAvailable->sva = bestFitIterator->sva;
+		bestFitIterator->size -= size;
+		bestFitIterator->sva += size;
+		return headBlockInAvailable;
+	}
+	else
+		return bestFitIterator;
 }
 
 //=========================================
@@ -254,13 +281,75 @@ struct MemBlock *alloc_block_BF(uint32 size)
 
 	//	panic("alloc_block_BF() is not implemented yet...!!");
 
+//	struct MemBlock * iterator;
+//
+//	struct MemBlock * bestFitIterator = NULL;
+//
+//	uint32 firstTime = 1;
+//
+//	uint32 leastSize;
+//
+//	LIST_FOREACH(iterator, &(FreeMemBlocksList))
+//	{
+//		if(iterator->size == size)
+//		{
+//			LIST_REMOVE(&(FreeMemBlocksList), iterator);
+//
+//			return iterator;
+//		}
+//		else if(iterator->size > size)
+//		{
+//			if(firstTime)
+//			{
+//				bestFitIterator = iterator;
+//
+//				leastSize = bestFitIterator->size;
+//
+//				firstTime = 0;
+//			}
+//			else
+//			{
+//				if(iterator->size < leastSize)
+//				{
+//					bestFitIterator = iterator;
+//
+//					leastSize = bestFitIterator->size;
+//				}
+//			}
+//		}
+//	}
+//
+//	if(bestFitIterator != NULL)
+//	{
+//		struct MemBlock returnedBlock;
+//
+//		struct MemBlock * headBlockInAvailable;
+//
+//		returnedBlock.size = size;
+//
+//		returnedBlock.sva = bestFitIterator->sva;
+//
+//		bestFitIterator->size = bestFitIterator->size - size;
+//
+//		bestFitIterator->sva = bestFitIterator->sva + size;
+//
+//		bestFitIterator = &(returnedBlock);
+//
+//		headBlockInAvailable = LIST_FIRST(&(AvailableMemBlocksList));
+//
+//		LIST_REMOVE(&(AvailableMemBlocksList), headBlockInAvailable);
+//
+//		return bestFitIterator;
+//	}
+//	return NULL;
+
+
+
 	struct MemBlock * iterator;
 
 	struct MemBlock * bestFitIterator = NULL;
 
-	uint32 firstTime = 1;
-
-	uint32 leastSize;
+	uint32 leastSize = 0xFFFFFFFF;
 
 	LIST_FOREACH(iterator, &(FreeMemBlocksList))
 	{
@@ -272,49 +361,26 @@ struct MemBlock *alloc_block_BF(uint32 size)
 		}
 		else if(iterator->size > size)
 		{
-			if(firstTime)
-			{
+			if (iterator->size < leastSize){
 				bestFitIterator = iterator;
 
-				leastSize = bestFitIterator->size;
-
-				firstTime = 0;
-			}
-			else
-			{
-				if(iterator->size < leastSize)
-				{
-					bestFitIterator = iterator;
-
-					leastSize = bestFitIterator->size;
-				}
+				leastSize = iterator->size;
 			}
 		}
 	}
 
 	if(bestFitIterator != NULL)
 	{
-		struct MemBlock returnedBlock;
-
-		struct MemBlock * headBlockInAvailable;
-
-		returnedBlock.size = size;
-
-		returnedBlock.sva = bestFitIterator->sva;
-
-		bestFitIterator->size = bestFitIterator->size - size;
-
-		bestFitIterator->sva = bestFitIterator->sva + size;
-
-		bestFitIterator = &(returnedBlock);
-
-		headBlockInAvailable = LIST_FIRST(&(AvailableMemBlocksList));
-
-		LIST_REMOVE(&(AvailableMemBlocksList), headBlockInAvailable);
-
-		return bestFitIterator;
+		struct MemBlock * headBlockInAvailable = LIST_FIRST(&AvailableMemBlocksList);
+		LIST_REMOVE(&AvailableMemBlocksList, headBlockInAvailable);
+		headBlockInAvailable->sva = bestFitIterator->sva ;
+		headBlockInAvailable->size = size;
+		bestFitIterator->sva += size;
+		bestFitIterator->size -= size;
+		return headBlockInAvailable;
 	}
-	return NULL;
+	else
+		return bestFitIterator;
 }
 
 
