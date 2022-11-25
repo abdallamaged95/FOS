@@ -65,8 +65,9 @@ inline int virtual_to_physical(uint32* page_directory, uint32 virtual_address)
 	uint32 *page_table_entry;
 	uint32 exist = get_page_table(page_directory , virtual_address , &page_table_entry);
 	if(!exist){
-		uint32 physical_address = page_table_entry[PTX(virtual_address)] & 0xfffff000;
-		return physical_address;
+		uint32 tmp = page_table_entry[PTX(virtual_address)] >> 12;
+		uint32 pa = tmp << 12;
+		return pa;
 	}
 	else
 		return -1;
