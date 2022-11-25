@@ -76,7 +76,59 @@ int copy_paste_chunk(uint32* page_directory, uint32 source_va, uint32 dest_va, u
 {
 	//TODO: [PROJECT MS2] [CHUNK OPERATIONS] copy_paste_chunk
 	// Write your code here, remove the panic and write your code
-	panic("copy_paste_chunk() is not implemented yet...!!");
+	//panic("copy_paste_chunk() is not implemented yet...!!");
+
+	uint32 limit_source = source_va + size;
+	uint32 limit_dest = dest_va + size;
+	size = ROUNDUP(source_va + size ,PAGE_SIZE);
+	uint32 source_page = ROUNDDOWN(source_va, PAGE_SIZE);
+	uint32 dest_page = ROUNDDOWN(dest_va, PAGE_SIZE);
+
+	while (source_page != size)
+	{
+		uint32 *source_page_table = NULL;
+		uint32 *dest_page_table = NULL;
+		struct FrameInfo *source_frame = NULL;
+		struct FrameInfo *dest_frame = NULL;
+		uint32 dest_perms ,source_perms;
+
+		dest_frame = get_frame_info(page_directory, dest_page, &dest_page_table);
+		if (dest_page_table == NULL){
+			create_page_table(page_directory ,dest_page);
+			pt_set_page_permissions(page_directory ,dest_page ,PERM_WRITEABLE ,0);
+		}
+
+		source_perms = pt_get_page_permissions(page_directory ,source_page);
+		if (dest_frame == NULL){
+			int ret = allocate_frame(&dest_frame);
+			if (ret != 0){
+				cprintf("NO MEMORY\n");
+				return -1;
+			}
+			map_frame(page_directory ,dest_frame ,dest_page ,((source_perms & PERM_USER) | PERM_WRITEABLE));
+		}
+
+		dest_perms = pt_get_page_permissions(page_directory ,dest_page);
+		if (!(dest_perms & PERM_WRITEABLE)){
+			cprintf("READ ONLY\n");
+			return -1;
+		}
+
+		dest_page += PAGE_SIZE;
+		source_page += PAGE_SIZE;
+	}
+
+	while(source_va != limit_source)
+	{
+		unsigned char *tmp1 = (unsigned char *)(source_va);
+		unsigned char *tmp2 = (unsigned char *)(dest_va);
+		*tmp2 = *tmp1;
+
+		dest_va += 1;
+		source_va += 1;
+	}
+
+	return 0;
 }
 
 //===============================
