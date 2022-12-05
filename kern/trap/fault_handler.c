@@ -77,9 +77,69 @@ void page_fault_handler(struct Env * curenv, uint32 fault_va)
 {
 	//TODO: [PROJECT MS3] [FAULT HANDLER] page_fault_handler
 	// Write your code here, remove the panic and write your code
-	panic("page_fault_handler() is not implemented yet...!!");
+	//panic("page_fault_handler() is not implemented yet...!!");
 
-	//refer to the project presentation and documentation for details
+	fault_va = ROUNDDOWN(fault_va ,PAGE_SIZE);
+	cprintf("Address : %x 55555555555555555555555555555555555\n",fault_va);
+//	env_page_ws_print(curenv);
+	struct FrameInfo *frame = NULL;
+	if (allocate_frame(&frame)){
+		panic("NO MEMORY AVAILABLE\n");
+	}
+	map_frame(curenv->env_page_directory ,frame ,fault_va ,(PERM_WRITEABLE | PERM_PRESENT | PERM_USER | PERM_USED));
+
+	bool not_exist = pf_read_env_page(curenv ,(void *)fault_va);
+	bool placement = 1;
+
+	int size = env_page_ws_get_size(curenv);
+	cprintf("size : %d , max : %d\n",size,curenv->page_WS_max_size);
+
+	if (size == (curenv->page_WS_max_size)){
+		placement = 0;
+	}
+	if (!placement)
+	{
+		cprintf("REPLACEMENT #############################################\n");
+		while(1){
+			struct FrameInfo *tmp = NULL;
+			uint32 *fake = NULL;
+			uint32 va = env_page_ws_get_virtual_address(curenv ,curenv->page_last_WS_index);
+			uint32 perm_used = pt_get_page_permissions(curenv->env_page_directory ,va) & PERM_USED;
+			uint32 perm_mod  = pt_get_page_permissions(curenv->env_page_directory ,va) & PERM_MODIFIED;
+			if (perm_used){
+				pt_set_page_permissions(curenv->env_page_directory ,va ,0 ,PERM_USED);
+				curenv->page_last_WS_index++;
+				curenv->page_last_WS_index %= curenv->page_WS_max_size;
+			}
+			else{
+				if (perm_mod){
+					tmp = get_frame_info(curenv->env_page_directory ,va ,&fake);
+					pf_update_env_page(curenv ,va ,tmp);
+				}
+				env_page_ws_clear_entry(curenv ,curenv->page_last_WS_index);
+				unmap_frame(curenv->env_page_directory ,va);
+				placement = 1;
+				break;
+			}
+		}
+	}
+//	env_page_ws_print(curenv);
+	if (placement)
+	{
+		cprintf("PLACEMENT $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$\n");
+		if (not_exist){
+			if(fault_va >= 0 && fault_va < USER_HEAP_START)
+				panic("ILLEGAL MEMORY ACCESS\n");
+		}
+		while(1){
+			if(env_page_ws_is_entry_empty(curenv ,curenv->page_last_WS_index)){
+				env_page_ws_set_entry(curenv ,curenv->page_last_WS_index ,fault_va);
+				curenv->page_last_WS_index++;
+				curenv->page_last_WS_index %= curenv->page_WS_max_size;
+				break;
+			}
+		}
+	}
 }
 void __page_fault_handler_with_buffering(struct Env * curenv, uint32 fault_va)
 {

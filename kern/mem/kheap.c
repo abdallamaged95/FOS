@@ -87,7 +87,7 @@ void* kmalloc(unsigned int size)
 		if(block!=NULL)
 		{
 			va = block->sva;
-		    allocate_chunk(ptr_page_directory, va, size, (PERM_WRITEABLE | PERM_USED));
+		    allocate_chunk(ptr_page_directory, va, size, (PERM_WRITEABLE | PERM_USED | PERM_PRESENT));
 		}
 
 		else
