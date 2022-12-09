@@ -80,7 +80,7 @@ void page_fault_handler(struct Env * curenv, uint32 fault_va)
 	//panic("page_fault_handler() is not implemented yet...!!");
 
 	fault_va = ROUNDDOWN(fault_va ,PAGE_SIZE);
-	cprintf("Address : %x 55555555555555555555555555555555555\n",fault_va);
+
 //	env_page_ws_print(curenv);
 	struct FrameInfo *frame = NULL;
 	if (allocate_frame(&frame)){
@@ -92,14 +92,14 @@ void page_fault_handler(struct Env * curenv, uint32 fault_va)
 	bool placement = 1;
 
 	int size = env_page_ws_get_size(curenv);
-	cprintf("size : %d , max : %d\n",size,curenv->page_WS_max_size);
+
 
 	if (size == (curenv->page_WS_max_size)){
 		placement = 0;
 	}
 	if (!placement)
 	{
-		cprintf("REPLACEMENT #############################################\n");
+
 		while(1){
 			struct FrameInfo *tmp = NULL;
 			uint32 *fake = NULL;
@@ -126,7 +126,7 @@ void page_fault_handler(struct Env * curenv, uint32 fault_va)
 //	env_page_ws_print(curenv);
 	if (placement)
 	{
-		cprintf("PLACEMENT $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$\n");
+
 		if (not_exist){
 			if(fault_va >= 0 && fault_va < USER_HEAP_START)
 				panic("ILLEGAL MEMORY ACCESS\n");

@@ -19,6 +19,8 @@ void InitializeUHeap()
 	}
 }
 
+#define REAL_SIZE ROUNDUP(USER_HEAP_START - USER_DYN_BLKS_ARRAY, PAGE_SIZE) - PAGE_SIZE
+
 //==================================================================================//
 //============================ REQUIRED FUNCTIONS ==================================//
 //==================================================================================//
@@ -30,7 +32,49 @@ void initialize_dyn_block_system()
 {
 	//TODO: [PROJECT MS3] [USER HEAP - USER SIDE] initialize_dyn_block_system
 	// your code is here, remove the panic and write your code
-	panic("initialize_dyn_block_system() is not implemented yet...!!");
+	//panic("initialize_dyn_block_system() is not implemented yet...!!");
+	struct MemBlock* AvailableMemBlocksNodes = (struct MemBlock *) USER_DYN_BLKS_ARRAY;
+	struct MemBlock* FreeMemBlocksNodes;
+
+			MAX_MEM_BLOCK_CNT = NUM_OF_UHEAP_PAGES;
+
+	        LIST_INIT(&FreeMemBlocksList);
+	        LIST_INIT(&AllocMemBlocksList);
+
+	        sys_allocate_chunk(USER_DYN_BLKS_ARRAY, REAL_SIZE, (PERM_WRITEABLE | PERM_PRESENT | PERM_USER | PERM_USED));
+
+	        AvailableMemBlocksNodes->sva = USER_DYN_BLKS_ARRAY;
+	        AvailableMemBlocksNodes->size = PAGE_SIZE;
+
+	        LIST_INSERT_HEAD(&AvailableMemBlocksList, AvailableMemBlocksNodes);
+
+
+	        for(int i = 1; i < (MAX_MEM_BLOCK_CNT - 1); i++)
+	        {
+	        		struct MemBlock* tmp = AvailableMemBlocksNodes;
+	                AvailableMemBlocksNodes++;
+
+	                tmp->prev_next_info.le_next = AvailableMemBlocksNodes;
+	                AvailableMemBlocksNodes->prev_next_info.le_prev = tmp;
+
+					AvailableMemBlocksNodes->sva = USER_DYN_BLKS_ARRAY + i * PAGE_SIZE;
+					AvailableMemBlocksNodes->size = PAGE_SIZE;
+
+	                LIST_INSERT_TAIL(&AvailableMemBlocksList, AvailableMemBlocksNodes);
+	        }
+			struct MemBlock* tmp = AvailableMemBlocksNodes;
+
+	        AvailableMemBlocksNodes++;
+
+	        tmp->prev_next_info.le_next = AvailableMemBlocksNodes;
+	        AvailableMemBlocksNodes->prev_next_info.le_prev = tmp;
+
+	        FreeMemBlocksNodes = AvailableMemBlocksNodes;
+
+	        FreeMemBlocksNodes->sva = USER_HEAP_START;
+	        FreeMemBlocksNodes->size = USER_HEAP_MAX - USER_HEAP_START;
+
+	        LIST_INSERT_HEAD(&FreeMemBlocksList,FreeMemBlocksNodes);
 
 	//[1] Initialize two lists (AllocMemBlocksList & FreeMemBlocksList) [Hint: use LIST_INIT()]
 	//[2] Dynamically allocate the array of MemBlockNodes at VA USER_DYN_BLKS_ARRAY
@@ -54,7 +98,45 @@ void* malloc(uint32 size)
 
 	//TODO: [PROJECT MS3] [USER HEAP - USER SIDE] malloc
 	// your code is here, remove the panic and write your code
-	panic("malloc() is not implemented yet...!!");
+	//panic("malloc() is not implemented yet...!!");
+	struct MemBlock* block;
+
+		size = ROUNDUP(size, PAGE_SIZE);
+
+		if(sys_isUHeapPlacementStrategyFIRSTFIT())
+		{
+
+			struct MemBlock *iterator = NULL;
+
+				struct MemBlock *bestFitIterator = NULL;
+
+				LIST_FOREACH(iterator ,&FreeMemBlocksList){
+					if (iterator->size == size ){
+						LIST_REMOVE(&FreeMemBlocksList,iterator);
+						block = iterator;
+					}
+					else if (iterator->size > size){
+						bestFitIterator = iterator;
+						break;
+					}
+				}
+				if (bestFitIterator != NULL){
+					struct MemBlock *headBlockInAvailable = LIST_FIRST(&AvailableMemBlocksList);
+					LIST_REMOVE(&AvailableMemBlocksList ,headBlockInAvailable);
+					headBlockInAvailable->size = size;
+					headBlockInAvailable->sva = bestFitIterator->sva;
+					bestFitIterator->size -= size;
+					bestFitIterator->sva += size;
+					block = headBlockInAvailable;
+				}
+				else
+					block = bestFitIterator;
+
+			if (block == NULL)
+			 return NULL;
+
+		}
+		return (void*) block->sva;
 
 	// Steps:
 	//	1) Implement FF strategy to search the heap for suitable space

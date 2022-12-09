@@ -37,7 +37,7 @@ void initialize_dyn_block_system()
         LIST_INIT(&FreeMemBlocksList);
         LIST_INIT(&AllocMemBlocksList);
 
-        allocate_chunk(ptr_page_directory, START, REAL_SIZE, (PERM_WRITEABLE | PERM_PRESENT));
+        allocate_chunk(ptr_page_directory, START, REAL_SIZE, (PERM_WRITEABLE | PERM_PRESENT | PERM_USED));
 
         AvailableMemBlocksNodes->sva = START;
         AvailableMemBlocksNodes->size = PAGE_SIZE;
@@ -87,7 +87,7 @@ void* kmalloc(unsigned int size)
 		if(block!=NULL)
 		{
 			va = block->sva;
-		    allocate_chunk(ptr_page_directory, va, size, (PERM_WRITEABLE | PERM_USED | PERM_PRESENT));
+		    allocate_chunk(ptr_page_directory, va, size, (PERM_WRITEABLE | PERM_PRESENT | PERM_USED));
 		}
 
 		else
@@ -103,7 +103,7 @@ void* kmalloc(unsigned int size)
 		if(block!=NULL)
 		{
 			va = block->sva;
-		    allocate_chunk(ptr_page_directory, va, size, (PERM_WRITEABLE | PERM_USED));
+		    allocate_chunk(ptr_page_directory, va, size, (PERM_WRITEABLE | PERM_PRESENT | PERM_USED));
 		}
 
 		else
