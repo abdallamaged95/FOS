@@ -81,7 +81,6 @@ void page_fault_handler(struct Env * curenv, uint32 fault_va)
 
 	fault_va = ROUNDDOWN(fault_va ,PAGE_SIZE);
 
-//	env_page_ws_print(curenv);
 	struct FrameInfo *frame = NULL;
 	if (allocate_frame(&frame)){
 		panic("NO MEMORY AVAILABLE\n");
@@ -99,7 +98,6 @@ void page_fault_handler(struct Env * curenv, uint32 fault_va)
 	}
 	if (!placement)
 	{
-
 		while(1){
 			struct FrameInfo *tmp = NULL;
 			uint32 *fake = NULL;
@@ -108,8 +106,7 @@ void page_fault_handler(struct Env * curenv, uint32 fault_va)
 			uint32 perm_mod  = pt_get_page_permissions(curenv->env_page_directory ,va) & PERM_MODIFIED;
 			if (perm_used){
 				pt_set_page_permissions(curenv->env_page_directory ,va ,0 ,PERM_USED);
-				curenv->page_last_WS_index++;
-				curenv->page_last_WS_index %= curenv->page_WS_max_size;
+				curenv->page_last_WS_index = (curenv->page_last_WS_index + 1) % curenv->page_WS_max_size;
 			}
 			else{
 				if (perm_mod){
@@ -119,23 +116,21 @@ void page_fault_handler(struct Env * curenv, uint32 fault_va)
 				env_page_ws_clear_entry(curenv ,curenv->page_last_WS_index);
 				unmap_frame(curenv->env_page_directory ,va);
 				placement = 1;
+				curenv->page_last_WS_index = (curenv->page_last_WS_index + 1) % curenv->page_WS_max_size;
 				break;
 			}
 		}
 	}
-//	env_page_ws_print(curenv);
+
 	if (placement)
 	{
-
 		if (not_exist){
 			if(fault_va >= 0 && fault_va < USER_HEAP_START)
 				panic("ILLEGAL MEMORY ACCESS\n");
 		}
-		while(1){
-			if(env_page_ws_is_entry_empty(curenv ,curenv->page_last_WS_index)){
-				env_page_ws_set_entry(curenv ,curenv->page_last_WS_index ,fault_va);
-				curenv->page_last_WS_index++;
-				curenv->page_last_WS_index %= curenv->page_WS_max_size;
+		for (int i = 0 ; i < curenv->page_WS_max_size ;i++){
+			if(env_page_ws_is_entry_empty(curenv ,i)){
+				env_page_ws_set_entry(curenv ,i ,fault_va);
 				break;
 			}
 		}
