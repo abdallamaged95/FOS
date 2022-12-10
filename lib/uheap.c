@@ -106,36 +106,40 @@ void* malloc(uint32 size)
 		if(sys_isUHeapPlacementStrategyFIRSTFIT())
 		{
 
-			struct MemBlock *iterator = NULL;
-
-				struct MemBlock *bestFitIterator = NULL;
-
-				LIST_FOREACH(iterator ,&FreeMemBlocksList){
-					if (iterator->size == size ){
-						LIST_REMOVE(&FreeMemBlocksList,iterator);
-						block = iterator;
-					}
-					else if (iterator->size > size){
-						bestFitIterator = iterator;
-						break;
-					}
-				}
-				if (bestFitIterator != NULL){
-					struct MemBlock *headBlockInAvailable = LIST_FIRST(&AvailableMemBlocksList);
-					LIST_REMOVE(&AvailableMemBlocksList ,headBlockInAvailable);
-					headBlockInAvailable->size = size;
-					headBlockInAvailable->sva = bestFitIterator->sva;
-					bestFitIterator->size -= size;
-					bestFitIterator->sva += size;
-					block = headBlockInAvailable;
-				}
-				else
-					block = bestFitIterator;
-
-			if (block == NULL)
-			 return NULL;
-
+//			struct MemBlock *iterator = NULL;
+//
+//				struct MemBlock *bestFitIterator = NULL;
+//
+//				LIST_FOREACH(iterator ,&FreeMemBlocksList){
+//					if (iterator->size == size ){
+//						LIST_REMOVE(&FreeMemBlocksList,iterator);
+//						block = iterator;
+//					}
+//					else if (iterator->size > size){
+//						bestFitIterator = iterator;
+//						break;
+//					}
+//				}
+//				if (bestFitIterator != NULL){
+//					struct MemBlock *headBlockInAvailable = LIST_FIRST(&AvailableMemBlocksList);
+//					LIST_REMOVE(&AvailableMemBlocksList ,headBlockInAvailable);
+//					headBlockInAvailable->size = size;
+//					headBlockInAvailable->sva = bestFitIterator->sva;
+//					bestFitIterator->size -= size;
+//					bestFitIterator->sva += size;
+//					block = headBlockInAvailable;
+//				}
+//				else
+//					block = bestFitIterator;
+//
+//			if (block == NULL)
+//			 return NULL;
+			block = alloc_block_FF(size);
+						if (block == NULL)
+						 return NULL;
 		}
+		insert_sorted_allocList(block);
+
 		return (void*) block->sva;
 
 	// Steps:
@@ -163,8 +167,25 @@ void free(void* virtual_address)
 {
 	//TODO: [PROJECT MS3] [USER HEAP - USER SIDE] free
 	// your code is here, remove the panic and write your code
-	panic("free() is not implemented yet...!!");
+	//panic("free() is not implemented yet...!!");
+	uint32 va = (uint32) virtual_address;
+	uint32 size;
 
+	struct MemBlock* block = (find_block(&(AllocMemBlocksList), va));
+	va = ROUNDDOWN(va, PAGE_SIZE);
+
+	if(block != NULL)
+	{
+		size  = ROUNDUP(block->size, PAGE_SIZE);
+
+		LIST_REMOVE(&(AllocMemBlocksList), block);
+		insert_sorted_with_merge_freeList(block);
+
+		sys_free_user_mem(va, size);
+
+
+
+	}
 	//you should get the size of the given allocation using its address
 	//you need to call sys_free_user_mem()
 	//refer to the project presentation and documentation for details
