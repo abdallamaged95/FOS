@@ -99,44 +99,42 @@ void* malloc(uint32 size)
 	//TODO: [PROJECT MS3] [USER HEAP - USER SIDE] malloc
 	// your code is here, remove the panic and write your code
 	//panic("malloc() is not implemented yet...!!");
-	struct MemBlock* block;
+	struct MemBlock* block = NULL;
 
 		size = ROUNDUP(size, PAGE_SIZE);
 
 		if(sys_isUHeapPlacementStrategyFIRSTFIT())
 		{
 
-//			struct MemBlock *iterator = NULL;
-//
-//				struct MemBlock *bestFitIterator = NULL;
-//
-//				LIST_FOREACH(iterator ,&FreeMemBlocksList){
-//					if (iterator->size == size ){
-//						LIST_REMOVE(&FreeMemBlocksList,iterator);
-//						block = iterator;
-//					}
-//					else if (iterator->size > size){
-//						bestFitIterator = iterator;
-//						break;
-//					}
-//				}
-//				if (bestFitIterator != NULL){
-//					struct MemBlock *headBlockInAvailable = LIST_FIRST(&AvailableMemBlocksList);
-//					LIST_REMOVE(&AvailableMemBlocksList ,headBlockInAvailable);
-//					headBlockInAvailable->size = size;
-//					headBlockInAvailable->sva = bestFitIterator->sva;
-//					bestFitIterator->size -= size;
-//					bestFitIterator->sva += size;
-//					block = headBlockInAvailable;
-//				}
-//				else
-//					block = bestFitIterator;
-//
-//			if (block == NULL)
-//			 return NULL;
-			block = alloc_block_FF(size);
-						if (block == NULL)
-						 return NULL;
+		// ===============================FIRST FIT====================================
+			struct MemBlock *iterator = NULL;
+
+			struct MemBlock *bestFitIterator = NULL;
+
+			LIST_FOREACH(iterator ,&FreeMemBlocksList){
+				if (iterator->size == size ){
+					LIST_REMOVE(&FreeMemBlocksList,iterator);
+					block = iterator;
+				}
+				else if (iterator->size > size){
+					bestFitIterator = iterator;
+					break;
+				}
+			}
+			if (bestFitIterator != NULL){
+				struct MemBlock *headBlockInAvailable = LIST_FIRST(&AvailableMemBlocksList);
+				LIST_REMOVE(&AvailableMemBlocksList ,headBlockInAvailable);
+				headBlockInAvailable->size = size;
+				headBlockInAvailable->sva = bestFitIterator->sva;
+				bestFitIterator->size -= size;
+				bestFitIterator->sva += size;
+				block = headBlockInAvailable;
+			}
+			else
+				block = bestFitIterator;
+		// =================================================================================
+			if (block == NULL)
+			 return NULL;
 		}
 		insert_sorted_allocList(block);
 
@@ -205,7 +203,55 @@ void* smalloc(char *sharedVarName, uint32 size, uint8 isWritable)
 
 	//TODO: [PROJECT MS3] [SHARING - USER SIDE] smalloc()
 	// Write your code here, remove the panic and write your code
-	panic("smalloc() is not implemented yet...!!");
+	//panic("smalloc() is not implemented yet...!!");
+
+	if (sys_isUHeapPlacementStrategyFIRSTFIT())
+	{
+		size = ROUNDUP(size ,PAGE_SIZE);
+
+		struct MemBlock *block = NULL;
+
+		// ===============================FIRST FIT====================================
+		struct MemBlock *iterator = NULL;
+
+		struct MemBlock *bestFitIterator = NULL;
+
+		LIST_FOREACH(iterator ,&FreeMemBlocksList){
+			if (iterator->size == size ){
+				LIST_REMOVE(&FreeMemBlocksList,iterator);
+				block = iterator;
+			}
+			else if (iterator->size > size){
+				bestFitIterator = iterator;
+				break;
+			}
+		}
+		if (bestFitIterator != NULL){
+			struct MemBlock *headBlockInAvailable = LIST_FIRST(&AvailableMemBlocksList);
+			LIST_REMOVE(&AvailableMemBlocksList ,headBlockInAvailable);
+			headBlockInAvailable->size = size;
+			headBlockInAvailable->sva = bestFitIterator->sva;
+			bestFitIterator->size -= size;
+			bestFitIterator->sva += size;
+			block = headBlockInAvailable;
+		}
+		else
+			block = bestFitIterator;
+		// =================================================================================
+
+		if (block == NULL)
+			return NULL;
+
+		int ret = sys_createSharedObject(sharedVarName ,size ,isWritable ,(void*)block->sva);
+
+		if (ret != E_NO_SHARE && ret != E_SHARED_MEM_EXISTS){
+			insert_sorted_allocList(block);
+			return (void*)ROUNDDOWN(block->sva, PAGE_SIZE);
+		}
+	}
+
+	return NULL;
+
 	// Steps:
 	//	1) Implement FIRST FIT strategy to search the heap for suitable space
 	//		to the required allocation size (space should be on 4 KB BOUNDARY)

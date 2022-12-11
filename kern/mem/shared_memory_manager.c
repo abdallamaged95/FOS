@@ -269,9 +269,40 @@ int createSharedObject(int32 ownerID, char* shareName, uint32 size, uint8 isWrit
 {
 	//TODO: [PROJECT MS3] [SHARING - KERNEL SIDE] createSharedObject()
 	// your code is here, remove the panic and write your code
-	panic("createSharedObject() is not implemented yet...!!");
+	//panic("createSharedObject() is not implemented yet...!!");
 
 	struct Env* myenv = curenv; //The calling environment
+
+	if (get_share_object_ID(ownerID ,shareName) != E_SHARED_MEM_NOT_EXISTS)
+		return E_SHARED_MEM_EXISTS;
+
+	size = ROUNDUP(size ,PAGE_SIZE);
+	uint32 va = (uint32)virtual_address;
+	va = ROUNDDOWN(va ,PAGE_SIZE);
+
+	struct Share *shared_var = NULL;
+	int index = allocate_share_object(&shared_var);
+	if (index != E_NO_SHARE){
+		shared_var->isWritable = isWritable;
+		strcpy(shared_var->name ,shareName);
+		shared_var->ownerID = ownerID;
+		shared_var->references = 1;
+		shared_var->size = size;
+
+		allocate_chunk(myenv->env_page_directory ,va ,size
+				,PERM_WRITEABLE | PERM_PRESENT | PERM_USED | PERM_USER);
+
+		uint32 limit = va + size;
+		for(int i = 0 ; va < limit ;i++){
+			struct FrameInfo *frame = NULL;
+			uint32 *fake = NULL;
+			frame = get_frame_info(myenv->env_page_directory ,va ,&fake);
+			add_frame_to_storage(shared_var->framesStorage ,frame ,i);
+			va += PAGE_SIZE;
+		}
+	}
+
+	return index;
 
 	// This function should create the shared object at the given virtual address with the given size
 	// and return the ShareObjectID

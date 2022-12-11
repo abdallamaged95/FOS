@@ -322,54 +322,54 @@ void allocate_user_mem(struct Env* e, uint32 virtual_address, uint32 size)
 //=====================================
 void free_user_mem(struct Env* e, uint32 virtual_address, uint32 size)
 {
-        //TODO: [PROJECT MS3] [USER HEAP - KERNEL SIDE] free_user_mem
-        // Write your code here, remove the panic and write your code
-        //panic("free_user_mem() is not implemented yet...!!");
-        uint32* table;
+	//TODO: [PROJECT MS3] [USER HEAP - KERNEL SIDE] free_user_mem
+	// Write your code here, remove the panic and write your code
+	//panic("free_user_mem() is not implemented yet...!!");
+	uint32* table;
 
-        for(int va = virtual_address; va < virtual_address + size; va += PAGE_SIZE)
-				pf_remove_env_page(e, va);
+	for(int va = virtual_address; va < virtual_address + size; va += PAGE_SIZE)
+		pf_remove_env_page(e, va);
 
-                for (int index = 0; index < e->page_WS_max_size; index++)
-                {
-                	uint32 WS_va = env_page_ws_get_virtual_address(e, index);
+	for (int index = 0; index < e->page_WS_max_size; index++)
+	{
+		uint32 WS_va = env_page_ws_get_virtual_address(e, index);
 
-                        if(WS_va >= virtual_address && WS_va < virtual_address + size)
-                        {
-                                unmap_frame(e->env_page_directory, WS_va);
-                                env_page_ws_clear_entry(e, index);
+		if(WS_va >= virtual_address && WS_va < virtual_address + size)
+		{
+			unmap_frame(e->env_page_directory, WS_va);
+			env_page_ws_clear_entry(e, index);
 
-                        }
-                }
+		}
+	}
 
-                for(int va = virtual_address; va < virtual_address + size; va += PAGE_SIZE)
-                {
-                        bool flag = 1;
-                        get_page_table(e->env_page_directory, va, &table);
+	for(int va = virtual_address; va < virtual_address + size; va += PAGE_SIZE)
+	{
+		bool flag = 1;
+		get_page_table(e->env_page_directory, va, &table);
 
-                        if(table != NULL)
-                        {
-                                for(int index = 0; index < 1024; index++)
-                                {
-                                        if(table[index] != 0)
-                                        {
-                                                flag = 0;
-                                                break;
-                                        }
-                                }
-                                if(flag)
-                                {
-                                		e->env_page_directory[PDX(va)] = 0;
-                                        kfree((void*) table);
-                                }
-                        }
-                }
+		if(table != NULL)
+		{
+			for(int index = 0; index < 1024; index++)
+			{
+				if(table[index] != 0)
+				{
+						flag = 0;
+						break;
+				}
+			}
+			if(flag)
+			{
+				e->env_page_directory[PDX(va)] = 0;
+				kfree((void*) table);
+			}
+		}
+	}
 
 
-        //This function should:
-        //1. Free ALL pages of the given range from the Page File
-        //2. Free ONLY pages that are resident in the working set from the memory
-        //3. Removes ONLY the empty page tables (i.e. not used) (no pages are mapped in the table)
+	//This function should:
+	//1. Free ALL pages of the given range from the Page File
+	//2. Free ONLY pages that are resident in the working set from the memory
+	//3. Removes ONLY the empty page tables (i.e. not used) (no pages are mapped in the table)
 }
 //=====================================
 // 2) FREE USER MEMORY (BUFFERING):
