@@ -115,6 +115,7 @@ void* malloc(uint32 size)
 				if (iterator->size == size ){
 					LIST_REMOVE(&FreeMemBlocksList,iterator);
 					block = iterator;
+					break;
 				}
 				else if (iterator->size > size){
 					bestFitIterator = iterator;
@@ -130,8 +131,6 @@ void* malloc(uint32 size)
 				bestFitIterator->sva += size;
 				block = headBlockInAvailable;
 			}
-			else
-				block = bestFitIterator;
 		// =================================================================================
 			if (block == NULL)
 			 return NULL;
@@ -176,12 +175,10 @@ void free(void* virtual_address)
 	{
 		size  = ROUNDUP(block->size, PAGE_SIZE);
 
-		LIST_REMOVE(&(AllocMemBlocksList), block);
-		insert_sorted_with_merge_freeList(block);
-
 		sys_free_user_mem(va, size);
 
-
+		LIST_REMOVE(&(AllocMemBlocksList), block);
+		insert_sorted_with_merge_freeList(block);
 
 	}
 	//you should get the size of the given allocation using its address
@@ -211,7 +208,7 @@ void* smalloc(char *sharedVarName, uint32 size, uint8 isWritable)
 
 		struct MemBlock *block = NULL;
 
-		// ===============================FIRST FIT====================================
+	// ===============================FIRST FIT====================================
 		struct MemBlock *iterator = NULL;
 
 		struct MemBlock *bestFitIterator = NULL;
@@ -220,6 +217,7 @@ void* smalloc(char *sharedVarName, uint32 size, uint8 isWritable)
 			if (iterator->size == size ){
 				LIST_REMOVE(&FreeMemBlocksList,iterator);
 				block = iterator;
+				break;
 			}
 			else if (iterator->size > size){
 				bestFitIterator = iterator;
@@ -235,9 +233,7 @@ void* smalloc(char *sharedVarName, uint32 size, uint8 isWritable)
 			bestFitIterator->sva += size;
 			block = headBlockInAvailable;
 		}
-		else
-			block = bestFitIterator;
-		// =================================================================================
+	// =================================================================================
 
 		if (block == NULL)
 			return NULL;
