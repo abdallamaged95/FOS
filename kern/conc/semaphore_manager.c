@@ -146,7 +146,27 @@ int createSemaphore(int32 ownerEnvID, char* semaphoreName, uint32 initialValue)
 {
 	//TODO: [PROJECT MS3] [SEMAPHORES] createSemaphore
 	// your code is here, remove the panic and write your code
-	panic("createSemaphore() is not implemented yet...!!");
+//	panic("createSemaphore() is not implemented yet...!!");
+	if(get_semaphore_object_ID(ownerEnvID, semaphoreName) != E_SEMAPHORE_NOT_EXISTS) {
+		return E_SEMAPHORE_EXISTS;
+	}
+	else {
+		struct Semaphore *allocated_semaphore = NULL;
+		int returned_semaphore_ID = allocate_semaphore_object(&allocated_semaphore);
+		if(returned_semaphore_ID == E_NO_SEMAPHORE) {
+			return E_NO_SEMAPHORE;
+		}
+		else {
+			allocated_semaphore->ownerID = ownerEnvID;
+			int semaphoreNameSize = strlen(semaphoreName);
+			for(int i = 0; i < semaphoreNameSize; i++) {
+				allocated_semaphore->name[i] = semaphoreName[i];
+			}
+			allocated_semaphore->value = initialValue;
+			return returned_semaphore_ID;
+		}
+	}
+
 
 	//create new semaphore object and initialize it by the given info (ownerID, name, value)
 	//Return:
@@ -155,9 +175,9 @@ int createSemaphore(int32 ownerEnvID, char* semaphoreName, uint32 initialValue)
 	//	c) E_NO_SEMAPHORE if the the array of semaphores is full
 
 	//change this "return" according to your answer
-	return 0;
+//	return 0;
 }
-
+struct Env_Queue semaphore_queue;
 //============
 // [2] Wait():
 //============
@@ -165,10 +185,19 @@ void waitSemaphore(int32 ownerEnvID, char* semaphoreName)
 {
 	//TODO: [PROJECT MS3] [SEMAPHORES] waitSemaphore
 	// your code is here, remove the panic and write your code
-	panic("waitSemaphore() is not implemented yet...!!");
+//	panic("waitSemaphore() is not implemented yet...!!");
 
 	struct Env* myenv = curenv; //The calling environment
+	int returned_semaphore_ID = get_semaphore_object_ID(ownerEnvID, semaphoreName);
 
+	semaphores[returned_semaphore_ID].value--;
+	if(semaphores[returned_semaphore_ID].value < 0) {
+		enqueue(&semaphore_queue, myenv);
+		myenv->env_status = ENV_BLOCKED;
+		sched_remove_ready(myenv);
+		curenv = NULL;
+	}
+	fos_scheduler();
 	// Steps:
 	//	1) Get the Semaphore
 	//	2) Decrement its value
@@ -186,8 +215,15 @@ void signalSemaphore(int ownerEnvID, char* semaphoreName)
 {
 	//TODO: [PROJECT MS3] [SEMAPHORES] signalSemaphore
 	// your code is here, remove the panic and write your code
-	panic("signalSemaphore() is not implemented yet...!!");
+//	panic("signalSemaphore() is not implemented yet...!!");
+	int returned_semaphore_ID = get_semaphore_object_ID(ownerEnvID, semaphoreName);
 
+	semaphores[returned_semaphore_ID].value++;
+	if(semaphores[returned_semaphore_ID].value <= 0) {
+		struct Env *myenv = dequeue(&semaphore_queue);
+		sched_insert_ready(myenv);
+		myenv->env_status = ENV_READY;
+	}
 	// Steps:
 	//	1) Get the Semaphore
 	//	2) Increment its value
