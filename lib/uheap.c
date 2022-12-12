@@ -202,15 +202,13 @@ void* smalloc(char *sharedVarName, uint32 size, uint8 isWritable)
 	// Write your code here, remove the panic and write your code
 	//panic("smalloc() is not implemented yet...!!");
 
-	if (sys_isUHeapPlacementStrategyFIRSTFIT())
-	{
-		size = ROUNDUP(size ,PAGE_SIZE);
-
-		struct MemBlock *block = NULL;
+	size = ROUNDUP(size ,PAGE_SIZE);
+	struct MemBlock *block = NULL;
 
 	// ===============================FIRST FIT====================================
+	if (sys_isUHeapPlacementStrategyFIRSTFIT())
+	{
 		struct MemBlock *iterator = NULL;
-
 		struct MemBlock *bestFitIterator = NULL;
 
 		LIST_FOREACH(iterator ,&FreeMemBlocksList){
@@ -233,17 +231,16 @@ void* smalloc(char *sharedVarName, uint32 size, uint8 isWritable)
 			bestFitIterator->sva += size;
 			block = headBlockInAvailable;
 		}
-	// =================================================================================
-
 		if (block == NULL)
 			return NULL;
+	}
+	// =================================================================================
 
-		int ret = sys_createSharedObject(sharedVarName ,size ,isWritable ,(void*)block->sva);
+	int ret = sys_createSharedObject(sharedVarName ,size ,isWritable ,(void*)block->sva);
 
-		if (ret != E_NO_SHARE && ret != E_SHARED_MEM_EXISTS){
-			insert_sorted_allocList(block);
-			return (void*)ROUNDDOWN(block->sva, PAGE_SIZE);
-		}
+	if (ret != E_NO_SHARE && ret != E_SHARED_MEM_EXISTS){
+		insert_sorted_allocList(block);
+		return (void*)ROUNDDOWN(block->sva, PAGE_SIZE);
 	}
 
 	return NULL;
@@ -276,7 +273,53 @@ void* sget(int32 ownerEnvID, char *sharedVarName)
 
 	//TODO: [PROJECT MS3] [SHARING - USER SIDE] sget()
 	// Write your code here, remove the panic and write your code
-	panic("sget() is not implemented yet...!!");
+	//panic("sget() is not implemented yet...!!");
+
+	int size = sys_getSizeOfSharedObject(ownerEnvID ,sharedVarName);
+	if (size == E_SHARED_MEM_NOT_EXISTS)
+		return NULL;
+	size = ROUNDUP(size ,PAGE_SIZE);
+
+	struct MemBlock *block = NULL;
+
+	// ===============================FIRST FIT====================================
+	if (sys_isUHeapPlacementStrategyFIRSTFIT()){
+
+		struct MemBlock *iterator = NULL;
+		struct MemBlock *bestFitIterator = NULL;
+
+		LIST_FOREACH(iterator ,&FreeMemBlocksList){
+			if (iterator->size == size ){
+				LIST_REMOVE(&FreeMemBlocksList,iterator);
+				block = iterator;
+				break;
+			}
+			else if (iterator->size > size){
+				bestFitIterator = iterator;
+				break;
+			}
+		}
+		if (bestFitIterator != NULL){
+			struct MemBlock *headBlockInAvailable = LIST_FIRST(&AvailableMemBlocksList);
+			LIST_REMOVE(&AvailableMemBlocksList ,headBlockInAvailable);
+			headBlockInAvailable->size = size;
+			headBlockInAvailable->sva = bestFitIterator->sva;
+			bestFitIterator->size -= size;
+			bestFitIterator->sva += size;
+			block = headBlockInAvailable;
+		}
+		if (block == NULL)
+			return NULL;
+	}
+	// =================================================================================
+
+	block->sva = ROUNDDOWN(block->sva ,PAGE_SIZE);
+	int ret = sys_getSharedObject(ownerEnvID ,sharedVarName ,(void*)block->sva);
+	if (ret == -1 || ret == E_SHARED_MEM_NOT_EXISTS){
+		return NULL;
+	}
+	return (void*)block->sva;
+
 
 	// Steps:
 	//	1) Get the size of the shared variable (use sys_getSizeOfSharedObject())
