@@ -329,8 +329,10 @@ int getSharedObject(int32 ownerID, char* shareName, void* virtual_address)
 	uint32 limit = size + va;
 	int flag;
 	uint32 *table = NULL;
-
-	for(int i=0 ; va != limit ; i++,va += PAGE_SIZE){
+if (index != E_SHARED_MEM_NOT_EXISTS)
+{
+	for(int i=0 ; va != limit ; i++,va += PAGE_SIZE)
+	{
 		 flag = get_page_table(myenv->env_page_directory, va, &table);
 
 		if (flag ==  TABLE_NOT_EXIST)
@@ -342,7 +344,7 @@ int getSharedObject(int32 ownerID, char* shareName, void* virtual_address)
 		map_frame(myenv->env_page_directory ,frames ,va ,perms|PERM_USER|PERM_USED|PERM_PRESENT);
 		shares[index].references++;
 	}
-
+}
 	return index;
 
 	// 	This function should share the required object in the heap of the current environment
