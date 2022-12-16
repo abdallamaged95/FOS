@@ -13,7 +13,6 @@ _main(void)
 	// *************************************************************************************************
 	/// Shared Variables Region ************************************************************************
 	// *************************************************************************************************
-
 	int numOfCustomers = 15;
 	int flight1Customers = 3;
 	int flight2Customers = 8;
@@ -72,6 +71,7 @@ _main(void)
 			custs[f3].booked = 0;
 			custs[f3].flightType = 3;
 		}
+
 	}
 
 	int* custCounter = smalloc(_custCounter, sizeof(int), 1);

@@ -7,7 +7,6 @@ void
 _main(void)
 {
 	int32 parentenvID = sys_getparentenvid();
-
 	char _customers[] = "customers";
 	char _custCounter[] = "custCounter";
 	char _flight1Counter[] = "flight1Counter";
@@ -74,7 +73,7 @@ _main(void)
 	ltostr(custId, id);
 	strcconcat(prefix, id, sname);
 	sys_waitSemaphore(parentenvID, sname);
-
+	customers[custId].booked = 1;
 	//print the customer status
 	if(customers[custId].booked == 1)
 	{
@@ -87,6 +86,7 @@ _main(void)
 
 	//customer is terminated
 	sys_signalSemaphore(parentenvID, _custTerminated);
+
 
 	return;
 }
