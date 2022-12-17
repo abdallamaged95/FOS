@@ -318,6 +318,7 @@ void* sget(int32 ownerEnvID, char *sharedVarName)
 	if (ret == -1 || ret == E_SHARED_MEM_NOT_EXISTS){
 		return NULL;
 	}
+	insert_sorted_allocList(block);
 	return (void*)block->sva;
 
 
@@ -387,9 +388,20 @@ void *realloc(void *virtual_address, uint32 new_size)
 void sfree(void* virtual_address)
 {
 	//TODO: [PROJECT MS3 - BONUS] [SHARING - USER SIDE] sfree()
-
 	// Write your code here, remove the panic and write your code
-	panic("sfree() is not implemented yet...!!");
+	//panic("sfree() is not implemented yet...!!");
+
+	uint32 va = (uint32) virtual_address;
+	va = ROUNDDOWN(va ,PAGE_SIZE);
+	struct MemBlock* block = find_block(&(AllocMemBlocksList), va);
+
+	if (block != NULL){
+		int ret = sys_freeSharedObject(-1 ,(void*)va);
+		if (ret == 0){
+			LIST_REMOVE(&(AllocMemBlocksList), block);
+			insert_sorted_with_merge_freeList(block);
+		}
+	}
 }
 
 

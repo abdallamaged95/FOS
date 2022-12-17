@@ -88,11 +88,13 @@ void page_fault_handler(struct Env * curenv, uint32 fault_va)
 	map_frame(curenv->env_page_directory ,frame ,fault_va ,(PERM_WRITEABLE | PERM_PRESENT | PERM_USER | PERM_USED));
 
 	bool not_exist = pf_read_env_page(curenv ,(void *)fault_va);
-	bool placement = 1;
+	if (not_exist){
+		if(fault_va >= 0 && fault_va < USER_HEAP_START)
+			panic("ILLEGAL MEMORY ACCESS\n");
+	}
 
 	int size = env_page_ws_get_size(curenv);
-
-
+	bool placement = 1;
 	if (size == (curenv->page_WS_max_size)){
 		placement = 0;
 	}
@@ -124,10 +126,6 @@ void page_fault_handler(struct Env * curenv, uint32 fault_va)
 
 	if (placement)
 	{
-		if (not_exist){
-			if(fault_va >= 0 && fault_va < USER_HEAP_START)
-				panic("ILLEGAL MEMORY ACCESS\n");
-		}
 		for (int i = 0 ; i < curenv->page_WS_max_size ;i++){
 			if(env_page_ws_is_entry_empty(curenv ,i)){
 				env_page_ws_set_entry(curenv ,i ,fault_va);

@@ -202,33 +202,29 @@ int allocate_chunk(uint32* page_directory, uint32 va, uint32 size, uint32 perms)
 	size = ROUNDUP(va + size, PAGE_SIZE);
 	va = ROUNDDOWN(va, PAGE_SIZE);
 
-	while(va != size)
-	{
-	 flag = get_page_table(page_directory, va, &table);
+	while(va != size){
+		flag = get_page_table(page_directory, va, &table);
 
-	if (flag ==  TABLE_NOT_EXIST)
-		create_page_table(page_directory, va);
+		if (flag ==  TABLE_NOT_EXIST)
+			create_page_table(page_directory, va);
 
-	struct FrameInfo* frames = get_frame_info(page_directory, va, &table);
+		struct FrameInfo* frames = get_frame_info(page_directory, va, &table);
 
-	if (frames == NULL)
-	{
+		if (frames == NULL){
+			flag = allocate_frame(&frames);
 
-		flag = allocate_frame(&frames);
+			if (flag != E_NO_MEM)			{
+				map_frame(page_directory, frames, va, perms);
+				frames->va = va;
+			}
 
-		if (flag != E_NO_MEM)
-		{
-			map_frame(page_directory, frames, va, perms);
-			frames->va = va;
+			else
+				return -1;
+
+			va+=PAGE_SIZE;
 		}
-
 		else
 			return -1;
-
-		va+=PAGE_SIZE;
-	}
-	else
-		return -1;
 	}
 	return 0;
 }

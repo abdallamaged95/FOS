@@ -286,20 +286,34 @@ int createSharedObject(int32 ownerID, char* shareName, uint32 size, uint8 isWrit
 		shared_var->isWritable = isWritable;
 		strcpy(shared_var->name ,shareName);
 		shared_var->ownerID = ownerID;
-		shared_var->references = 1;
+		shared_var->references = 0; // maybe 1 idk :(
+		shared_var->empty = 0;
 		shared_var->size = size;
-
-		allocate_chunk(myenv->env_page_directory ,va ,size
-				,PERM_WRITEABLE | PERM_PRESENT | PERM_USED | PERM_USER);
-
+	// =========================== ALLOCATE CHUNK ========================================
+		int flag;
+		uint32 *table = NULL;
 		uint32 limit = va + size;
-		for(int i = 0 ; va < limit ;i++){
-			struct FrameInfo *frame = NULL;
-			uint32 *fake = NULL;
-			frame = get_frame_info(myenv->env_page_directory ,va ,&fake);
-			add_frame_to_storage(shared_var->framesStorage ,frame ,i);
-			va += PAGE_SIZE;
+		for(int i = 0 ; va < limit ;i++ ,va+=PAGE_SIZE){
+			flag = get_page_table(myenv->env_page_directory, va, &table);
+
+			if (flag ==  TABLE_NOT_EXIST)
+				create_page_table(myenv->env_page_directory, va);
+
+			struct FrameInfo* frames = get_frame_info(myenv->env_page_directory, va, &table);
+			if (frames == NULL){
+				flag = allocate_frame(&frames);
+				if (flag != E_NO_MEM)			{
+					map_frame(myenv->env_page_directory, frames, va,
+							PERM_WRITEABLE | PERM_PRESENT | PERM_USED | PERM_USER);
+					add_frame_to_storage(shared_var->framesStorage ,frames ,i);
+				}
+				else
+					panic("NO MEMORY AVAILABLE\n");
+			}
+			else
+				panic("ALREADY MAPPED\n");
 		}
+	// ===================================================================================
 	}
 
 	return index;
@@ -327,24 +341,24 @@ int getSharedObject(int32 ownerID, char* shareName, void* virtual_address)
 	uint32 size = ROUNDUP(getSizeOfSharedObject(ownerID,shareName) ,PAGE_SIZE);
 	uint32 va = ROUNDDOWN((uint32)virtual_address ,PAGE_SIZE);
 	uint32 limit = size + va;
+	shares[index].references++;
 	int flag;
 	uint32 *table = NULL;
-if (index != E_SHARED_MEM_NOT_EXISTS)
-{
-	for(int i=0 ; va != limit ; i++,va += PAGE_SIZE)
+	if (index != E_SHARED_MEM_NOT_EXISTS)
 	{
-		 flag = get_page_table(myenv->env_page_directory, va, &table);
+		for(int i=0 ; va != limit ; i++,va += PAGE_SIZE)
+		{
+			 flag = get_page_table(myenv->env_page_directory, va, &table);
 
-		if (flag ==  TABLE_NOT_EXIST)
-			create_page_table(myenv->env_page_directory, va);
+			if (flag ==  TABLE_NOT_EXIST)
+				create_page_table(myenv->env_page_directory, va);
 
-		struct FrameInfo* frames = get_frame_from_storage(shares[index].framesStorage ,i);
+			struct FrameInfo* frames = get_frame_from_storage(shares[index].framesStorage ,i);
 
-		uint32 perms = (shares[index].isWritable)? PERM_WRITEABLE : 0;
-		map_frame(myenv->env_page_directory ,frames ,va ,perms|PERM_USER|PERM_USED|PERM_PRESENT);
-		shares[index].references++;
+			uint32 perms = (shares[index].isWritable)? PERM_WRITEABLE : 0;
+			map_frame(myenv->env_page_directory ,frames ,va ,perms|PERM_USER|PERM_USED|PERM_PRESENT);
+		}
 	}
-}
 	return index;
 
 	// 	This function should share the required object in the heap of the current environment
@@ -366,9 +380,66 @@ int freeSharedObject(int32 sharedObjectID, void *startVA)
 {
 	//TODO: [PROJECT MS3 - BONUS] [SHARING - KERNEL SIDE] freeSharedObject()
 	// your code is here, remove the panic and write your code
-	panic("freeSharedObject() is not implemented yet...!!");
+	//panic("freeSharedObject() is not implemented yet...!!");
 
 	struct Env* myenv = curenv; //The calling environment
+
+	uint32 va = ROUNDDOWN((uint32)startVA ,PAGE_SIZE);
+	uint32 *table = NULL;
+	struct FrameInfo *frame = NULL;
+	frame = get_frame_info(myenv->env_page_directory ,va ,&table);
+	for (int32 i = 0 ; i < MAX_SHARES ; i++){
+		if (shares[i].empty == 0){
+			if(get_frame_from_storage(shares[i].framesStorage ,0) == frame){
+				sharedObjectID = i;
+				break;
+			}
+		}
+	}
+
+	if (sharedObjectID == -1){
+		return E_SHARED_MEM_NOT_EXISTS;
+	}
+
+	int size = shares[sharedObjectID].size;
+	size = ROUNDUP(size ,PAGE_SIZE);
+	uint32 limit = va + size;
+
+	shares[sharedObjectID].references--;
+	if(shares[sharedObjectID].references == 0){
+		free_share_object(sharedObjectID);
+	}
+
+	for (uint32 index = va; index < limit ; index+=PAGE_SIZE){
+		unmap_frame(myenv->env_page_directory ,index);
+	}
+
+	for (int index = 0; index < myenv->page_WS_max_size; index++){
+		uint32 WS_va = env_page_ws_get_virtual_address(myenv, index);
+		if(WS_va >= va && WS_va < limit){
+			env_page_ws_clear_entry(myenv, index);
+		}
+	}
+
+	table = NULL;
+	for(uint32 index = va; index < limit; index += PAGE_SIZE){
+		bool flag = 1;
+		get_page_table(myenv->env_page_directory, index, &table);
+		if(table != NULL){
+			for(int i = 0; i < 1024; i++){
+				if(table[i] != 0){
+					flag = 0;
+					break;
+				}
+			}
+			if(flag){
+				myenv->env_page_directory[PDX(index)] = 0;
+				kfree((void*) table);
+			}
+		}
+	}
+	tlbflush();
+	return 0;
 
 	// This function should free (delete) the shared object from the User Heapof the current environment
 	// If this is the last shared env, then the "frames_store" should be cleared and the shared object should be deleted
