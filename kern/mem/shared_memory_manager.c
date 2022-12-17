@@ -338,14 +338,15 @@ int getSharedObject(int32 ownerID, char* shareName, void* virtual_address)
 	struct Env* myenv = curenv; //The calling environment
 
 	int index = get_share_object_ID(ownerID ,shareName);
-	uint32 size = ROUNDUP(getSizeOfSharedObject(ownerID,shareName) ,PAGE_SIZE);
-	uint32 va = ROUNDDOWN((uint32)virtual_address ,PAGE_SIZE);
-	uint32 limit = size + va;
-	shares[index].references++;
-	int flag;
-	uint32 *table = NULL;
 	if (index != E_SHARED_MEM_NOT_EXISTS)
 	{
+		uint32 size = ROUNDUP(getSizeOfSharedObject(ownerID,shareName) ,PAGE_SIZE);
+		uint32 va = ROUNDDOWN((uint32)virtual_address ,PAGE_SIZE);
+		uint32 limit = size + va;
+		shares[index].references++;
+		int flag;
+		uint32 *table = NULL;
+
 		for(int i=0 ; va != limit ; i++,va += PAGE_SIZE)
 		{
 			 flag = get_page_table(myenv->env_page_directory, va, &table);
