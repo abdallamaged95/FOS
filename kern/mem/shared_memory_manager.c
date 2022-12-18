@@ -265,6 +265,7 @@ int getSizeOfSharedObject(int32 ownerID, char* shareName)
 //=========================
 // [1] Create Share Object:
 //=========================
+
 int createSharedObject(int32 ownerID, char* shareName, uint32 size, uint8 isWritable, void* virtual_address)
 {
 	//TODO: [PROJECT MS3] [SHARING - KERNEL SIDE] createSharedObject()
@@ -286,7 +287,7 @@ int createSharedObject(int32 ownerID, char* shareName, uint32 size, uint8 isWrit
 		shared_var->isWritable = isWritable;
 		strcpy(shared_var->name ,shareName);
 		shared_var->ownerID = ownerID;
-		shared_var->references = 0; // maybe 1 idk :(
+		shared_var->references = 1; // maybe 1 idk :(
 		shared_var->empty = 0;
 		shared_var->size = size;
 	// =========================== ALLOCATE CHUNK ========================================
@@ -315,6 +316,8 @@ int createSharedObject(int32 ownerID, char* shareName, uint32 size, uint8 isWrit
 		}
 	// ===================================================================================
 	}
+
+
 
 	return index;
 
@@ -434,7 +437,7 @@ int freeSharedObject(int32 sharedObjectID, void *startVA)
 				}
 			}
 			if(flag){
-				myenv->env_page_directory[PDX(index)] = 0;
+				pd_clear_page_dir_entry(myenv->env_page_directory, index);
 				kfree((void*) table);
 			}
 		}

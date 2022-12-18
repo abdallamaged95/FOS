@@ -395,6 +395,7 @@ void env_run(struct Env *e)
 	//cprintf("env_run %s [%d]: Cnt AFTER RESUME = %d\n", curenv->prog_name,curenv->env_id, cnt0);
 	env_pop_tf(&(curenv->env_tf));
 }
+#define REAL_SIZE ROUNDUP(USER_HEAP_START - 0x7fdff000, PAGE_SIZE) - PAGE_SIZE
 
 //===============================
 // 3) FREE ENV FROM THE SYSTEM:
@@ -410,7 +411,34 @@ void env_free(struct Env *e)
 	/*****************************************/
 	//TODO: [PROJECT MS3 - BONUS] [EXIT ENV] env_free
 	// your code is here, remove the panic and write your code
-	panic("env_free() is not implemented yet...!!");
+	//panic("env_free() is not implemented yet...!!");
+
+	// [1] [NOT REQUIRED] [If BUFFERING is Enabled] Un-buffer any BUFFERED page belong to this environment from the free/modified lists
+	// [2] Free the pages in the PAGE working set from the main memory
+	for (int index = 0; index < e->page_WS_max_size; index++)
+			unmap_frame(e->env_page_directory, env_page_ws_get_virtual_address(e, index));
+
+	// [3] free the PAGE working set itself from the main memory
+		kfree((void *) e->ptr_pageWorkingSet);
+
+	// [4] free the MemBlockNodes array of the USER HEAP dynamic allocator [if exists]
+	for (uint32 va = 0x7fdff000; va != REAL_SIZE + 0x7fdff000; va += PAGE_SIZE)
+			unmap_frame(e->env_page_directory, va);
+
+	// [5] Free Shared variables [if any]
+	// [6] Free Semaphores [if any]
+
+	// [7] Free all TABLES from the main memory
+	uint32* table;
+	for(uint32 va = 0x00200000; va != 0xef800000; va += PAGE_SIZE)
+		{
+			get_page_table(e->env_page_directory, va, &table);
+			kfree((void*) table);
+		}
+
+	// [8] free the page DIRECTORY from the main memory
+		kfree((void *) e->env_page_directory);
+
 
 	// [1] [NOT REQUIRED] [If BUFFERING is Enabled] Un-buffer any BUFFERED page belong to this environment from the free/modified lists
 	// [2] Free the pages in the PAGE working set from the main memory

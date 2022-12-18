@@ -165,9 +165,7 @@ int createSemaphore(int32 ownerEnvID, char* semaphoreName, uint32 initialValue)
 		{
 			allocated_semaphore->ownerID = ownerEnvID;
 			int semaphoreNameSize = strlen(semaphoreName);
-			for(int i = 0; i < semaphoreNameSize; i++) {
-				allocated_semaphore->name[i] = semaphoreName[i];
-			}
+			strcpy(allocated_semaphore->name ,semaphoreName);
 			allocated_semaphore->value = initialValue;
 			return 0;
 		}
@@ -198,15 +196,14 @@ void waitSemaphore(int32 ownerEnvID, char* semaphoreName)
 	if(returned_semaphore_ID != E_SEMAPHORE_NOT_EXISTS)
 	{
 	semaphores[returned_semaphore_ID].value--;
-	if(semaphores[returned_semaphore_ID].value < 0) {
+	if(semaphores[returned_semaphore_ID].value < 0)
+	{
 		enqueue(&semaphore_queue, myenv);
 		myenv->env_status = ENV_BLOCKED;
 		curenv = NULL;
-//		cprintf("========================First============\n");
-		fos_scheduler();
 	}
 	}
-//	cprintf("========================Done============\n");
+	fos_scheduler();
 
 	// Steps:
 	//	1) Get the Semaphore
