@@ -426,6 +426,11 @@ void env_free(struct Env *e)
 			unmap_frame(e->env_page_directory, va);
 
 	// [5] Free Shared variables [if any]
+	for (int i = 0 ; i < MAX_SHARES ; i++){
+		if (shares[i].ownerID == e->env_id && shares[i].empty == 0){
+			free_share_object(i);
+		}
+	}
 	// [6] Free Semaphores [if any]
 	// [7] Free all TABLES from the main memory
 	uint32* table;
