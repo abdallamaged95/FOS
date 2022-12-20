@@ -427,7 +427,6 @@ void env_free(struct Env *e)
 
 	// [5] Free Shared variables [if any]
 	// [6] Free Semaphores [if any]
-
 	// [7] Free all TABLES from the main memory
 	uint32* table;
 	for(uint32 va = 0x00200000; va != 0xef800000; va += PAGE_SIZE)
