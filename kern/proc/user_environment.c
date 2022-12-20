@@ -438,16 +438,6 @@ void env_free(struct Env *e)
 	// [8] free the page DIRECTORY from the main memory
 		kfree((void *) e->env_page_directory);
 
-
-	// [1] [NOT REQUIRED] [If BUFFERING is Enabled] Un-buffer any BUFFERED page belong to this environment from the free/modified lists
-	// [2] Free the pages in the PAGE working set from the main memory
-	// [3] free the PAGE working set itself from the main memory
-	// [4] free the MemBlockNodes array of the USER HEAP dynamic allocator [if exists]
-	// [5] Free Shared variables [if any]
-	// [6] Free Semaphores [if any]
-	// [7] Free all TABLES from the main memory
-	// [8] free the page DIRECTORY from the main memory
-
 	// [9] remove this program from the page file
 	/*(ALREADY DONE for you)*/
 	pf_free_env(e); /*(ALREADY DONE for you)*/ // (removes all of the program pages from the page file)

@@ -182,39 +182,10 @@ int createSemaphore(int32 ownerEnvID, char* semaphoreName, uint32 initialValue)
 	//change this "return" according to your answer
 //	return 0;
 }
-struct Env_Queue semaphore_queue;
 //============
 // [2] Wait():
 //============
-//void waitSemaphore(int32 ownerEnvID, char* semaphoreName)
-//{
-//	//TODO: [PROJECT MS3] [SEMAPHORES] waitSemaphore
-//	// your code is here, remove the panic and write your code
-////	panic("waitSemaphore() is not implemented yet...!!");
-//
-//	struct Env* myenv = curenv; //The calling environment
-//	int returned_semaphore_ID = get_semaphore_object_ID(ownerEnvID, semaphoreName);
-//	if(returned_semaphore_ID != E_SEMAPHORE_NOT_EXISTS)
-//	{
-//	semaphores[returned_semaphore_ID].value--;
-//	if(semaphores[returned_semaphore_ID].value < 0)
-//	{
-//		enqueue(&semaphore_queue, myenv);
-//		myenv->env_status = ENV_BLOCKED;
-//		curenv = NULL;
-//	}
-//	}
-//	fos_scheduler();
-//
-//	// Steps:
-//	//	1) Get the Semaphore
-//	//	2) Decrement its value
-//	//	3) If negative, block the calling environment "myenv", by
-//	//		a) adding it to semaphore queue		[refer to helper functions in doc]
-//	//		b) changing its status to ENV_BLOCKED
-//	//		c) set curenv with NULL
-//	//	4) Call "fos_scheduler()" to continue running the remaining envs
-//}
+
 void waitSemaphore(int32 ownerEnvID, char* semaphoreName)
 {
 	//TODO: [PROJECT MS3] [SEMAPHORES] waitSemaphore
